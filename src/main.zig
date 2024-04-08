@@ -15,6 +15,7 @@ pub fn main() anyerror!void {
     const screenWidth = 800;
     const screenHeight = 480;
     const gridSize = 16;
+    const gamepad = 5;
 
     // rl.initWindow(screenWidth, screenHeight, "Snake");
     rl.InitWindow(screenWidth, screenHeight, "Snake");
@@ -36,24 +37,24 @@ pub fn main() anyerror!void {
         rl.BeginDrawing();
         defer rl.EndDrawing();
         rl.ClearBackground(rl.RAYWHITE);
-        if (rl.IsKeyPressed(rl.KEY_A)) {
+        if (rl.IsKeyPressed(rl.KEY_A) or rl.IsGamepadButtonPressed(gamepad, rl.GAMEPAD_BUTTON_LEFT_FACE_LEFT)) {
             snake.setDirectionToGo(.west);
-        } else if (rl.IsKeyPressed(rl.KEY_D)) {
+        } else if (rl.IsKeyPressed(rl.KEY_D) or rl.IsGamepadButtonPressed(gamepad, rl.GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) {
             snake.setDirectionToGo(.east);
-        } else if (rl.IsKeyPressed(rl.KEY_S)) {
+        } else if (rl.IsKeyPressed(rl.KEY_S) or rl.IsGamepadButtonPressed(gamepad, rl.GAMEPAD_BUTTON_LEFT_FACE_DOWN)) {
             snake.setDirectionToGo(.south);
-        } else if (rl.IsKeyPressed(rl.KEY_W)) {
+        } else if (rl.IsKeyPressed(rl.KEY_W) or rl.IsGamepadButtonPressed(gamepad, rl.GAMEPAD_BUTTON_LEFT_FACE_UP)) {
             snake.setDirectionToGo(.north);
         }
 
         var nextNode: ?*Node = snake.head;
+        rl.DrawRectangle(snake.foodPosition.x * gridSize, snake.foodPosition.y * gridSize, gridSize, gridSize, rl.RED);
 
         while (nextNode) |node| {
             rl.DrawRectangle(node.position.x * gridSize, node.position.y * gridSize, gridSize, gridSize, rl.BLACK);
             nextNode = node.next;
         }
         
-        rl.DrawRectangle(snake.foodPosition.x * gridSize, snake.foodPosition.y * gridSize, gridSize, gridSize, rl.RED);
         try snake.tick();
 
         // rl.DrawText("Congrats! You created your first window!", 190, 200, 20, rl.LIGHTGRAY);
