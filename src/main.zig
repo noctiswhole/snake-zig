@@ -23,6 +23,7 @@ pub fn main() anyerror!void {
 
     rl.SetTargetFPS(30); // Set our game to run at 60 frames-per-second
     var snake = try Snake.init(gpa.allocator(), 50, 30);
+    var scoreText: [12:0]u8 = undefined;
     //--------------------------------------------------------------------------------------
 
     // Main game loop
@@ -60,8 +61,11 @@ pub fn main() anyerror!void {
         if (snake.isGameRunning) {
             try snake.tick();
         } else {
-            rl.DrawText("Press R to reset.", 190, 200, 20, rl.LIGHTGRAY);
+            rl.DrawText("Press R to reset.", 315, 225, 20, rl.LIGHTGRAY);
         }
+
+        _ = try std.fmt.bufPrint(&scoreText, "Score: {d}\x00", .{snake.length - 2});
+        rl.DrawText(@ptrCast(&scoreText), 10, 10, 20, rl.LIGHTGRAY);
 
         //----------------------------------------------------------------------------------
     }
