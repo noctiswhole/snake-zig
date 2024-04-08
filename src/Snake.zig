@@ -15,6 +15,7 @@ gridHeight: usize,
 directionCurrent: Direction,
 directionToGo: Direction,
 allocator: std.mem.Allocator,
+foodPosition: Position,
 
 pub fn init(alloc: std.mem.Allocator, gridWidth: usize, gridHeight: usize) !Snake {
     var startHead = try alloc.create(Node);
@@ -34,8 +35,9 @@ pub fn init(alloc: std.mem.Allocator, gridWidth: usize, gridHeight: usize) !Snak
         .gridWidth = gridWidth,
         .gridHeight = gridHeight,
         .allocator = alloc,
-        .directionCurrent = .west,
-        .directionToGo = .west,
+        .directionCurrent = .east,
+        .directionToGo = .east,
+        .foodPosition = .{.x = 10, .y = 10},
     };
 }
 
@@ -56,10 +58,37 @@ pub fn moveTo(self: *Snake, position: Position) void {
     self.head = node;
 }
 
-pub fn tick(self: *Snake) void {
+pub fn tick(self: *Snake) !void {
     var positionNew = self.head.position;
-    positionNew.x += 1;
-    self.moveTo(positionNew);
+    if (self.directionToGo == .north) {
+        positionNew.y -= 1;
+    } else if (self.directionToGo == .south) {
+        positionNew.y += 1;
+    } else if (self.directionToGo == .east) {
+        positionNew.x += 1;
+    } else if (self.directionToGo == .west) {
+        positionNew.x -= 1;
+    }
+    if (std.meta.eql(positionNew, self.foodPosition)) {
+        var newNode = try self.createNode(positionNew);
+        newNode.next = self.head;
+        self.head.previous = newNode;
+        self.head = newNode;
+    } else {
+        self.moveTo(positionNew);
+    }
+}
+
+pub fn setDirectionToGo(self: *Snake, direction: Direction) void {
+    if (self.directionToGo != .north and direction == .south) {
+        self.directionToGo = direction;
+    } else if (self.directionToGo != .south and direction == .north) {
+        self.directionToGo = direction;
+    } else if (self.directionToGo != .east and direction == .west) {
+        self.directionToGo = direction;
+    } else if (self.directionToGo != .west and direction == .east) {
+        self.directionToGo = direction;
+    }
 }
 
 pub fn createNode(self: *Snake, position: Position) !*Node {
