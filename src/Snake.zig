@@ -5,6 +5,7 @@ const GridItem = enums.GridItem;
 const Direction = enums.Direction;
 const Position = @import("Position.zig");
 const Snake = @This();
+const gridSize = 50 * 30;
 
 grid: [50][30]GridItem,
 length: usize,
@@ -81,10 +82,27 @@ pub fn tick(self: *Snake) !void {
             self.head.previous = newNode;
             self.head = newNode;
             self.length += 1;
+            self.generateNewFood();
         } else {
             self.moveTo(positionNew);
         }
     }
+}
+
+fn generateNewFood(self: *Snake) void {
+    const rnd = std.crypto.random;
+    var foodPos = rnd.intRangeAtMost(i32, 0, @intCast(gridSize - self.length));
+    var pos: u16 = 0;
+    while (foodPos > 0) {
+        if (self.grid[pos % 50][pos / 50] != .snake) {
+            foodPos -= 1;
+        }
+        pos += 1;
+        if (pos > gridSize) {
+            @panic("pos greater than gridSize");
+        }
+    }
+    self.foodPosition = .{ .x = @intCast(pos % 50), .y = @intCast(pos / 50) };
 }
 
 pub fn setDirectionToGo(self: *Snake, direction: Direction) void {
@@ -124,6 +142,7 @@ pub fn reset(self: *Snake) void {
     self.directionCurrent = .east;
     self.directionToGo = .east;
     self.length = 2;
+    self.generateNewFood();
     self.grid = .{.{.blank} ** 30} ** 50;
     self.isGameRunning = true;
 }
