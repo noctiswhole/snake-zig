@@ -16,8 +16,9 @@ directionCurrent: Direction,
 directionToGo: Direction,
 allocator: std.mem.Allocator,
 foodPosition: Position,
+isGameRunning: bool,
 
-pub fn init(alloc: std.mem.Allocator, gridWidth: usize, gridHeight: usize) !Snake {
+pub fn init(alloc: std.mem.Allocator, comptime gridWidth: i32, comptime gridHeight: i32) !Snake {
     var startHead = try alloc.create(Node);
     startHead.position = .{.x = 5, .y = 5};
     startHead.previous = null;
@@ -28,7 +29,7 @@ pub fn init(alloc: std.mem.Allocator, gridWidth: usize, gridHeight: usize) !Snak
     startTail.previous = startHead;
 
     return .{
-        .grid = .{.{.blank} ** 30} ** 50,
+        .grid = .{.{.blank} ** gridHeight} ** gridWidth,
         .length = 2,
         .head = startHead,
         .tail = startTail,
@@ -38,22 +39,22 @@ pub fn init(alloc: std.mem.Allocator, gridWidth: usize, gridHeight: usize) !Snak
         .directionCurrent = .east,
         .directionToGo = .east,
         .foodPosition = .{.x = 10, .y = 10},
+        .isGameRunning = true,
     };
 }
 
 pub fn moveTo(self: *Snake, position: Position) void {
-    if (self.length == 0) {
-        @panic("ERROR: Moving an empty list");
-    }
     var node = self.tail;
 
-    if (self.length > 1) {
-        // move the tail to the head
-        self.tail = node.previous orelse @panic("what how does the previous node not exist");
-        self.tail.next = null;
-        self.head.previous = node;
-        node.next = self.head;
-    }
+    // update grid for collision detection
+    self.grid[@intCast(node.position.x)][@intCast(node.position.y)] = .blank;
+    self.grid[@intCast(position.x)][@intCast(position.y)] = .snake;
+
+    // move the tail to the head
+    self.tail = node.previous orelse @panic("what how does the previous node not exist");
+    self.tail.next = null;
+    self.head.previous = node;
+    node.next = self.head;
     node.position = position;
     self.head = node;
 }
@@ -69,17 +70,25 @@ pub fn tick(self: *Snake) !void {
     } else if (self.directionToGo == .west) {
         positionNew.x -= 1;
     }
-    if (std.meta.eql(positionNew, self.foodPosition)) {
-        var newNode = try self.createNode(positionNew);
-        newNode.next = self.head;
-        self.head.previous = newNode;
-        self.head = newNode;
+    if (positionNew.x < 0 or positionNew.x >= self.gridWidth or positionNew.y < 0 or positionNew.y >= self.gridHeight) {
+        self.isGameRunning = false;
+    } else if (self.grid[@intCast(positionNew.x)][@intCast(positionNew.y)] == .snake) {
+        self.isGameRunning = false;
     } else {
-        self.moveTo(positionNew);
+        if (std.meta.eql(positionNew, self.foodPosition)) {
+            var newNode = try self.createNode(positionNew);
+            newNode.next = self.head;
+            self.head.previous = newNode;
+            self.head = newNode;
+            self.length += 1;
+        } else {
+            self.moveTo(positionNew);
+        }
     }
 }
 
 pub fn setDirectionToGo(self: *Snake, direction: Direction) void {
+    // make sure player can't go directly backwards
     if (self.directionToGo != .north and direction == .south) {
         self.directionToGo = direction;
     } else if (self.directionToGo != .south and direction == .north) {
@@ -99,18 +108,22 @@ pub fn createNode(self: *Snake, position: Position) !*Node {
     return node;
 }
 
-pub fn clear(self: *Snake) void {
-    var curr = self.head;
+pub fn reset(self: *Snake) void {
+    var curr: ?*Node = self.head.next;
     while (curr) |current| {
         curr = current.next;
-        defer self.allocator.destroy(current);
+        if (!std.meta.eql(current, self.tail)) {
+            self.allocator.destroy(current);
+        }
     }
-    self.length = 0;
-    self.head = null;
-    self.tail = null;
-
-}
-
-pub inline fn deinit(self: *Snake) void {
-    self.clear();
+    self.head.next = self.tail;
+    self.tail.previous = self.head;
+    const position = Position{.x = 5, .y = 5};
+    self.head.position = position;
+    self.tail.position = position;
+    self.directionCurrent = .east;
+    self.directionToGo = .east;
+    self.length = 2;
+    self.grid = .{.{.blank} ** 30} ** 50;
+    self.isGameRunning = true;
 }

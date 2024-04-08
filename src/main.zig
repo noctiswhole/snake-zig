@@ -21,7 +21,7 @@ pub fn main() anyerror!void {
     rl.InitWindow(screenWidth, screenHeight, "Snake");
     defer rl.CloseWindow(); // Close window and OpenGL context
 
-    rl.SetTargetFPS(60); // Set our game to run at 60 frames-per-second
+    rl.SetTargetFPS(30); // Set our game to run at 60 frames-per-second
     var snake = try Snake.init(gpa.allocator(), 50, 30);
     //--------------------------------------------------------------------------------------
 
@@ -45,6 +45,8 @@ pub fn main() anyerror!void {
             snake.setDirectionToGo(.south);
         } else if (rl.IsKeyPressed(rl.KEY_W) or rl.IsGamepadButtonPressed(gamepad, rl.GAMEPAD_BUTTON_LEFT_FACE_UP)) {
             snake.setDirectionToGo(.north);
+        } else if (rl.IsKeyPressed(rl.KEY_R)) {
+            snake.reset();
         }
 
         var nextNode: ?*Node = snake.head;
@@ -55,9 +57,12 @@ pub fn main() anyerror!void {
             nextNode = node.next;
         }
         
-        try snake.tick();
+        if (snake.isGameRunning) {
+            try snake.tick();
+        } else {
+            rl.DrawText("Press R to reset.", 190, 200, 20, rl.LIGHTGRAY);
+        }
 
-        // rl.DrawText("Congrats! You created your first window!", 190, 200, 20, rl.LIGHTGRAY);
         //----------------------------------------------------------------------------------
     }
 }
