@@ -44,6 +44,7 @@ pub fn init(alloc: std.mem.Allocator, comptime gridWidth: i32, comptime gridHeig
     };
 }
 
+// move tail to head at position
 pub fn moveTo(self: *Snake, position: Position) void {
     var node = self.tail;
 
@@ -60,6 +61,7 @@ pub fn moveTo(self: *Snake, position: Position) void {
     self.head = node;
 }
 
+// Advance snake forward and handle any collisions and food
 pub fn tick(self: *Snake) !void {
     var positionNew = self.head.position;
     if (self.directionToGo == .north) {
@@ -127,6 +129,7 @@ pub fn createNode(self: *Snake, position: Position) !*Node {
 }
 
 pub fn reset(self: *Snake) void {
+    // destroy all extra nodes
     var curr: ?*Node = self.head.next;
     while (curr) |current| {
         curr = current.next;
@@ -134,6 +137,8 @@ pub fn reset(self: *Snake) void {
             self.allocator.destroy(current);
         }
     }
+
+    // reset snake variables
     self.head.next = self.tail;
     self.tail.previous = self.head;
     const position = Position{.x = 5, .y = 5};
