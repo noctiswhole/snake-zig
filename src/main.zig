@@ -15,7 +15,7 @@ pub fn main() anyerror!void {
     const screenWidth = 800;
     const screenHeight = 480;
     const gridSize = 16;
-    const gamepad = 5;
+    const gamepad = 0;
 
     // rl.initWindow(screenWidth, screenHeight, "Snake");
     rl.InitWindow(screenWidth, screenHeight, "Snake");
