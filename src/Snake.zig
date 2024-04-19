@@ -19,7 +19,7 @@ allocator: std.mem.Allocator,
 foodPosition: Position,
 isGameRunning: bool,
 
-pub fn init(alloc: std.mem.Allocator, comptime gridWidth: i32, comptime gridHeight: i32) !Snake {
+pub fn init(alloc: std.mem.Allocator, comptime gridWidth: u32, comptime gridHeight: u32) !Snake {
     var startHead = try alloc.create(Node);
     startHead.position = .{.x = 5, .y = 5};
     startHead.previous = null;
