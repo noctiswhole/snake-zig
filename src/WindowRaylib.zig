@@ -2,8 +2,8 @@ const rl = @cImport({
     @cInclude("raylib.h");
 });
 
-pub fn createWindow(screenWidth: u32, screenHeight: u32) void {
-    rl.InitWindow(@intCast(screenWidth), @intCast(screenHeight), "Snake");
+pub fn createWindow(width: u32, height: u32) void {
+    rl.InitWindow(@intCast(width), @intCast(height), "Snake");
 
     rl.SetTargetFPS(30); // Set our game to run at 60 frames-per-second
 }
