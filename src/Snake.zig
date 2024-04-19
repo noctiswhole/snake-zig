@@ -63,6 +63,7 @@ pub fn moveTo(self: *Snake, position: Position) void {
 
 // Advance snake forward and handle any collisions and food
 pub fn tick(self: *Snake) !void {
+    // Calculate new head position and signal exit if oob or collision
     var positionNew = self.head.position;
     if (self.directionToGo == .north) {
         if (positionNew.y == 0) {
@@ -99,6 +100,7 @@ pub fn tick(self: *Snake) !void {
     }
 
     if (std.meta.eql(positionNew, self.foodPosition)) {
+        // Grow snake if it finds food
         var newNode = try self.createNode(positionNew);
         newNode.next = self.head;
         self.head.previous = newNode;
