@@ -5,6 +5,7 @@ const Snake = @import("Snake.zig");
 const Node = @import("Node.zig");
 const Window = @import("WindowRaylib.zig");
 const Graphics = @import("GraphicsRaylib.zig");
+const Input = @import("InputRaylib.zig");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
@@ -26,31 +27,26 @@ pub fn main() anyerror!void {
     // Main game loop
     while (!Window.shouldQuit()) { // Detect window close button or ESC key
         // Update
-        //----------------------------------------------------------------------------------
-        // TODO: Update your variables here
-        //----------------------------------------------------------------------------------
+        if (Input.IsKeyPressed(.left)) {
+            snake.setDirectionToGo(.west);
+        } else if (Input.IsKeyPressed(.right)) {
+            snake.setDirectionToGo(.east);
+        } else if (Input.IsKeyPressed(.down)) {
+            snake.setDirectionToGo(.south);
+        } else if (Input.IsKeyPressed(.up)) {
+            snake.setDirectionToGo(.north);
+        } else if (Input.IsKeyPressed(.reset)) {
+            snake.reset();
+        }
 
         // Draw
-        //----------------------------------------------------------------------------------
         Graphics.beginDrawing();
         defer Graphics.endDrawing();
-
         Graphics.clear();
-        // if (rl.IsKeyPressed(rl.KEY_A) or rl.IsGamepadButtonPressed(gamepad, rl.GAMEPAD_BUTTON_LEFT_FACE_LEFT)) {
-        //     snake.setDirectionToGo(.west);
-        // } else if (rl.IsKeyPressed(rl.KEY_D) or rl.IsGamepadButtonPressed(gamepad, rl.GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) {
-        //     snake.setDirectionToGo(.east);
-        // } else if (rl.IsKeyPressed(rl.KEY_S) or rl.IsGamepadButtonPressed(gamepad, rl.GAMEPAD_BUTTON_LEFT_FACE_DOWN)) {
-        //     snake.setDirectionToGo(.south);
-        // } else if (rl.IsKeyPressed(rl.KEY_W) or rl.IsGamepadButtonPressed(gamepad, rl.GAMEPAD_BUTTON_LEFT_FACE_UP)) {
-        //     snake.setDirectionToGo(.north);
-        // } else if (rl.IsKeyPressed(rl.KEY_R)) {
-        //     snake.reset();
-        // }
 
-        var nextNode: ?*Node = snake.head;
         Graphics.drawRectangle(snake.foodPosition.x * gridSize, snake.foodPosition.y * gridSize, gridSize, gridSize);
 
+        var nextNode: ?*Node = snake.head;
         while (nextNode) |node| {
             Graphics.drawRectangle(node.position.x * gridSize, node.position.y * gridSize, gridSize, gridSize);
             nextNode = node.next;
