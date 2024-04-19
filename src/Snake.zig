@@ -65,29 +65,48 @@ pub fn moveTo(self: *Snake, position: Position) void {
 pub fn tick(self: *Snake) !void {
     var positionNew = self.head.position;
     if (self.directionToGo == .north) {
-        positionNew.y -= 1;
-    } else if (self.directionToGo == .south) {
-        positionNew.y += 1;
-    } else if (self.directionToGo == .east) {
-        positionNew.x += 1;
-    } else if (self.directionToGo == .west) {
-        positionNew.x -= 1;
-    }
-    if (positionNew.x < 0 or positionNew.x >= self.gridWidth or positionNew.y < 0 or positionNew.y >= self.gridHeight) {
-        self.isGameRunning = false;
-    } else if (self.grid[positionNew.x][positionNew.y] == .snake) {
-        self.isGameRunning = false;
-    } else {
-        if (std.meta.eql(positionNew, self.foodPosition)) {
-            var newNode = try self.createNode(positionNew);
-            newNode.next = self.head;
-            self.head.previous = newNode;
-            self.head = newNode;
-            self.length += 1;
-            self.generateNewFood();
+        if (positionNew.y == 0) {
+            self.isGameRunning = false;
         } else {
-            self.moveTo(positionNew);
+            positionNew.y -= 1;
         }
+    } else if (self.directionToGo == .south) {
+        if (positionNew.y + 1 >= self.gridHeight) {
+            self.isGameRunning = false;
+        } else {
+            positionNew.y += 1;
+        }
+    } else if (self.directionToGo == .east) {
+        if (positionNew.x + 1 >= self.gridWidth) {
+            self.isGameRunning = false;
+        } else {
+            positionNew.x += 1;
+        }
+    } else if (self.directionToGo == .west) {
+        if (positionNew.x == 0) {
+            self.isGameRunning = false;
+        } else {
+            positionNew.x -= 1;
+        }
+    }
+
+    if (self.grid[positionNew.x][positionNew.y] == .snake) {
+        self.isGameRunning = false;
+    }
+
+    if (!self.isGameRunning) {
+        return;
+    }
+
+    if (std.meta.eql(positionNew, self.foodPosition)) {
+        var newNode = try self.createNode(positionNew);
+        newNode.next = self.head;
+        self.head.previous = newNode;
+        self.head = newNode;
+        self.length += 1;
+        self.generateNewFood();
+    } else {
+        self.moveTo(positionNew);
     }
 }
 
