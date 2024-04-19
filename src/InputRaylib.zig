@@ -2,15 +2,9 @@ const rl = @cImport({
     @cInclude("raylib.h");
 });
 
-pub const Key = enum {
-    up,
-    down,
-    left,
-    right,
-    reset,
-};
+const Key = @import("enums.zig").Key;
 
-pub fn IsKeyPressed(key: Key) bool {
+pub fn isKeyPressed(key: Key) bool {
     switch (key) {
         .left => return (rl.IsKeyPressed(rl.KEY_A) or rl.IsGamepadButtonPressed(0, rl.GAMEPAD_BUTTON_LEFT_FACE_LEFT)),
         .right => return (rl.IsKeyPressed(rl.KEY_D) or rl.IsGamepadButtonPressed(0, rl.GAMEPAD_BUTTON_LEFT_FACE_RIGHT)),

@@ -10,3 +10,11 @@ pub const Direction = enum {
     east,
     west,
 };
+
+pub const Key = enum {
+    up,
+    down,
+    left,
+    right,
+    reset,
+};

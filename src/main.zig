@@ -3,9 +3,9 @@
 const std = @import("std");
 const Snake = @import("Snake.zig");
 const Node = @import("Node.zig");
-const Window = @import("WindowRaylib.zig");
+const Window = @import("WindowSDL.zig");
 const Graphics = @import("GraphicsRaylib.zig");
-const Input = @import("InputRaylib.zig");
+const Input = @import("InputSDL.zig");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
@@ -17,7 +17,7 @@ pub fn main() anyerror!void {
     const gridSize = 16;
     // const gamepad = 0;
 
-    const window = Window.create(screenWidth, screenHeight);
+    var window = Window.create(screenWidth, screenHeight);
     defer window.destroy();
 
     var snake = try Snake.init(gpa.allocator(), 50, 30);
@@ -25,17 +25,17 @@ pub fn main() anyerror!void {
     //--------------------------------------------------------------------------------------
 
     // Main game loop
-    while (!Window.shouldQuit()) { // Detect window close button or ESC key
+    while (!window.shouldQuit()) { // Detect window close button or ESC key
         // Update
-        if (Input.IsKeyPressed(.left)) {
+        if (Input.isKeyPressed(.left)) {
             snake.setDirectionToGo(.west);
-        } else if (Input.IsKeyPressed(.right)) {
+        } else if (Input.isKeyPressed(.right)) {
             snake.setDirectionToGo(.east);
-        } else if (Input.IsKeyPressed(.down)) {
+        } else if (Input.isKeyPressed(.down)) {
             snake.setDirectionToGo(.south);
-        } else if (Input.IsKeyPressed(.up)) {
+        } else if (Input.isKeyPressed(.up)) {
             snake.setDirectionToGo(.north);
-        } else if (Input.IsKeyPressed(.reset)) {
+        } else if (Input.isKeyPressed(.reset)) {
             snake.reset();
         }
 
