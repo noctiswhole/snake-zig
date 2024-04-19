@@ -17,8 +17,8 @@ pub fn main() anyerror!void {
     const gridSize = 16;
     // const gamepad = 0;
 
-    Window.createWindow(screenWidth, screenHeight);
-    defer Window.destroyWindow();
+    const window = Window.create(screenWidth, screenHeight);
+    defer window.destroy();
 
     var snake = try Snake.init(gpa.allocator(), 50, 30);
     // var scoreText: [12:0]u8 = undefined;

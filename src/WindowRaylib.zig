@@ -1,14 +1,16 @@
+const Self = @This();
+
 const rl = @cImport({
     @cInclude("raylib.h");
 });
 
-pub fn createWindow(width: u32, height: u32) void {
+pub fn create(width: u32, height: u32) Self {
     rl.InitWindow(@intCast(width), @intCast(height), "Snake");
-
-    rl.SetTargetFPS(30); // Set our game to run at 60 frames-per-second
+    rl.SetTargetFPS(30);
+    return .{};
 }
 
-pub fn destroyWindow() void {
+pub fn destroy(_: Self) void {
     rl.CloseWindow();
 }
 
