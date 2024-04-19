@@ -8,7 +8,7 @@ const Snake = @This();
 const gridSize = 50 * 30;
 
 grid: [50][30]GridItem,
-length: usize,
+length: u32,
 head: *Node,
 tail: *Node,
 gridWidth: usize,
@@ -75,7 +75,7 @@ pub fn tick(self: *Snake) !void {
     }
     if (positionNew.x < 0 or positionNew.x >= self.gridWidth or positionNew.y < 0 or positionNew.y >= self.gridHeight) {
         self.isGameRunning = false;
-    } else if (self.grid[@intCast(positionNew.x)][@intCast(positionNew.y)] == .snake) {
+    } else if (self.grid[positionNew.x][positionNew.y] == .snake) {
         self.isGameRunning = false;
     } else {
         if (std.meta.eql(positionNew, self.foodPosition)) {
@@ -93,7 +93,7 @@ pub fn tick(self: *Snake) !void {
 
 fn generateNewFood(self: *Snake) void {
     const rnd = std.crypto.random;
-    var foodPos = rnd.intRangeAtMost(i32, 0, @intCast(gridSize - self.length));
+    var foodPos = rnd.intRangeAtMost(u32, 0, gridSize - self.length);
     var pos: u16 = 0;
     while (foodPos > 0) {
         if (self.grid[pos % 50][pos / 50] != .snake) {
