@@ -2,9 +2,8 @@ const rl = @cImport({
     @cInclude("raylib.h");
 });
 
-pub fn createWindow(screenWidth: usize, screenHeight: usize) void {
+pub fn createWindow(screenWidth: u32, screenHeight: u32) void {
     rl.InitWindow(@intCast(screenWidth), @intCast(screenHeight), "Snake");
-    defer rl.CloseWindow(); // Close window and OpenGL context
 
     rl.SetTargetFPS(30); // Set our game to run at 60 frames-per-second
 }

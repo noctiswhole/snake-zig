@@ -20,7 +20,7 @@ pub fn main() anyerror!void {
     defer Window.destroyWindow();
 
     var snake = try Snake.init(gpa.allocator(), 50, 30);
-    var scoreText: [12:0]u8 = undefined;
+    // var scoreText: [12:0]u8 = undefined;
     //--------------------------------------------------------------------------------------
 
     // Main game loop
@@ -62,7 +62,7 @@ pub fn main() anyerror!void {
             // rl.DrawText("Press R to reset.", 315, 225, 20, rl.LIGHTGRAY);
         }
 
-        _ = try std.fmt.bufPrint(&scoreText, "Score: {d}\x00", .{snake.length - 2});
+        // _ = try std.fmt.bufPrint(&scoreText, "Score: {d}\x00", .{snake.length - 2});
         // rl.DrawText(@ptrCast(&scoreText), 10, 10, 20, rl.LIGHTGRAY);
 
         //----------------------------------------------------------------------------------
