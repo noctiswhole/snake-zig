@@ -5,21 +5,21 @@ const GridItem = enums.GridItem;
 const Direction = enums.Direction;
 const Position = @import("Position.zig");
 const Snake = @This();
-const gridSize = 40 * 30;
+const gridWidth = 40;
+const gridHeight = 30;
+pub const gridSize = 16;
 
-grid: [40][30]GridItem,
 length: u32,
 head: *Node,
 tail: *Node,
-gridWidth: usize,
-gridHeight: usize,
 directionCurrent: Direction,
 directionToGo: Direction,
 allocator: std.mem.Allocator,
 foodPosition: Position,
 isGameRunning: bool,
+grid: [gridWidth][gridHeight]GridItem,
 
-pub fn init(alloc: std.mem.Allocator, comptime gridWidth: u32, comptime gridHeight: u32) !Snake {
+pub fn init(alloc: std.mem.Allocator) !Snake {
     var startHead = try alloc.create(Node);
     startHead.position = .{.x = 5, .y = 5};
     startHead.previous = null;
@@ -34,8 +34,6 @@ pub fn init(alloc: std.mem.Allocator, comptime gridWidth: u32, comptime gridHeig
         .length = 2,
         .head = startHead,
         .tail = startTail,
-        .gridWidth = gridWidth,
-        .gridHeight = gridHeight,
         .allocator = alloc,
         .directionCurrent = .east,
         .directionToGo = .east,
@@ -72,13 +70,13 @@ pub fn tick(self: *Snake) !void {
             positionNew.y -= 1;
         }
     } else if (self.directionToGo == .north) {
-        if (positionNew.y + 1 >= self.gridHeight) {
+        if (positionNew.y + 1 >= gridHeight) {
             self.isGameRunning = false;
         } else {
             positionNew.y += 1;
         }
     } else if (self.directionToGo == .east) {
-        if (positionNew.x + 1 >= self.gridWidth) {
+        if (positionNew.x + 1 >= gridWidth) {
             self.isGameRunning = false;
         } else {
             positionNew.x += 1;
@@ -169,6 +167,6 @@ pub fn reset(self: *Snake) void {
     self.directionToGo = .east;
     self.length = 2;
     self.generateNewFood();
-    self.grid = .{.{.blank} ** 30} ** 40;
+    self.grid = .{.{.blank} ** gridHeight} ** gridWidth;
     self.isGameRunning = true;
 }

@@ -17,15 +17,14 @@ pub fn main() anyerror!void {
     const screenWidth = 640;
     const screenHeight = 480;
     const allocator = gpa.allocator();
-    const gridSize = 16;
     // const gamepad = 0;
 
     var window = Window.create(screenWidth, screenHeight);
     defer window.destroy();
 
-    var graphics = Graphics.create(window.context, allocator);
+    var graphics = Graphics.create(window.context, allocator, screenWidth, screenHeight);
 
-    var snake = try Snake.init(allocator, 40, 30);
+    var snake = try Snake.init(allocator);
     // var scoreText: [12:0]u8 = undefined;
     //--------------------------------------------------------------------------------------
 
@@ -93,12 +92,12 @@ pub fn main() anyerror!void {
 
 
         // Graphics.drawRectangle(snake.foodPosition.x * gridSize, snake.foodPosition.y * gridSize, gridSize, gridSize);
-        graphics.drawSquare(snake.foodPosition.x * gridSize, snake.foodPosition.y * gridSize);
+        graphics.drawSquare(snake.foodPosition.x * Snake.gridSize, snake.foodPosition.y * Snake.gridSize);
 
         var nextNode: ?*Node = snake.head;
         while (nextNode) |node| {
-            graphics.drawSquare(node.position.x * gridSize, node.position.y * gridSize);
-            // Graphics.drawRectangle(node.position.x * gridSize, node.position.y * gridSize, gridSize, gridSize);
+            graphics.drawSquare(node.position.x * Snake.gridSize, node.position.y * Snake.gridSize);
+            // Graphics.drawRectangle(node.position.x * gridSize, node.position.y * gridSize,gridSize, gridSize);
             nextNode = node.next;
         }
         

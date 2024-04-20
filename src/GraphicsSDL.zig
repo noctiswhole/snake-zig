@@ -8,6 +8,7 @@ const math = std.math;
 const Vertex = @import("Vertex.zig");
 const zm = @import("zmath");
 const Self = @This();
+const gridSize = @import("Snake.zig").gridSize;
 
 const RGB = struct {
     r: f32,
@@ -26,7 +27,7 @@ const vertices = [_]Vertex{
     },
     Vertex{
         // top right 
-        .x = 15,
+        .x = gridSize - 1,
         .y = 0,
         .u = 1,
         .v = 0,
@@ -34,14 +35,14 @@ const vertices = [_]Vertex{
     Vertex{
         // bot left
         .x = 0,
-        .y = 15,
+        .y = gridSize - 1,
         .u = 0,
         .v = 1,
     },
     Vertex{ 
         // bot right
-        .x = 15,
-        .y = 15,
+        .x = gridSize - 1,
+        .y = gridSize - 1,
         .u = 1,
         .v = 1,
     },
@@ -138,7 +139,7 @@ fn compilerShaderPart(allocator: std.mem.Allocator, shader_type: gl.GLenum, sour
     return shader;
 }
 
-pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator) Self {
+pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWidth: usize, screenHeight: usize) Self {
 
     gl.load(context, getProcAddress) catch {
         @panic("Could not load GL context");
@@ -148,7 +149,7 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator) Self {
     };
     
     // Create projection matrix 
-    const projection = zm.orthographicRhGl(640, 480, -1, 1);
+    const projection = zm.orthographicRhGl(@floatFromInt(screenWidth), @floatFromInt(screenHeight), -1, 1);
     const uniformProjection = gl.getUniformLocation(program, "projection");
     // Transposition is needed because GLSL uses column-major matrices by default
     gl.programUniformMatrix4fv(program, uniformProjection, 1, gl.TRUE, zm.arrNPtr(&projection));
