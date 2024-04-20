@@ -5,9 +5,9 @@ const sdl = @cImport({
 const std = @import("std");
 const Snake = @import("Snake.zig");
 const Node = @import("Node.zig");
-const Window = @import("WindowSDL.zig");
-const Graphics = @import("GraphicsSDL.zig");
-const Input = @import("InputSDL.zig");
+const Window = @import("Window.zig");
+const Graphics = @import("Graphics.zig");
+const Input = @import("Input.zig");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 

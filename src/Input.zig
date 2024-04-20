@@ -1,11 +1,11 @@
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
 });
+const std = @import("std");
 
 const Key = @import("enums.zig").Key;
 
 pub fn pollInput() void {
-    sdl.SDL_PumpEvents();
 }
 
 pub fn isKeyPressed(key: Key) bool {
