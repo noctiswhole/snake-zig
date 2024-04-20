@@ -2,15 +2,17 @@ const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
 });
 
+const std = @import("std");
 
 const Self = @This();
 screen: *sdl.SDL_Window,
 context: sdl.SDL_GLContext,
 renderer: *sdl.SDL_Renderer,
+joystick: *sdl.SDL_Joystick,
 quit: bool = false,
 
 pub fn create(width: u32, height: u32) Self {
-    if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO) != 0) {
+    if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_JOYSTICK) != 0) {
         sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
         @panic("");
     }
@@ -20,7 +22,7 @@ pub fn create(width: u32, height: u32) Self {
     _ = sdl.SDL_GL_SetSwapInterval(0);
     _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DOUBLEBUFFER, 1);
     _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DEPTH_SIZE, 24);
-    const screen = sdl.SDL_CreateWindow("My Game Window", sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, @intCast(width), @intCast(height), sdl.SDL_WINDOW_OPENGL) orelse
+    const screen = sdl.SDL_CreateWindow("My Game Window", sdl.SDL_WINDOWPOS_CENTERED, sdl.SDL_WINDOWPOS_CENTERED, @intCast(width), @intCast(height), sdl.SDL_WINDOW_OPENGL) orelse
     {
         sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
         @panic("");
@@ -32,10 +34,19 @@ pub fn create(width: u32, height: u32) Self {
 
     const context = sdl.SDL_GL_CreateContext(screen);
 
+
+    const numJoysticks = sdl.SDL_NumJoysticks();
+    for (0..@intCast(numJoysticks)) |i| {
+        const c_i: c_int = @intCast(i);
+        std.debug.print("{d}: {s}\n", .{c_i, sdl.SDL_JoystickNameForIndex(c_i)});
+    }
+    const joystick = sdl.SDL_JoystickOpen(0) orelse @panic("could not open joystick");
+
     return .{
         .screen = screen,
         .context = context,
-        .renderer = renderer
+        .renderer = renderer,
+        .joystick = joystick,
     };
 }
 
@@ -44,10 +55,10 @@ pub fn shouldQuit(self: *Self) bool {
 }
 
 pub fn destroy(self: *Self) void {
-    sdl.SDL_Quit();
     sdl.SDL_DestroyWindow(self.screen);
     sdl.SDL_DestroyRenderer(self.renderer);
     sdl.SDL_GL_DeleteContext(self.context);
+    sdl.SDL_Quit();
 }
 
 pub fn beginDrawing(_: Self) void {
@@ -55,7 +66,7 @@ pub fn beginDrawing(_: Self) void {
 
 pub fn endDrawing(self: *Self) void {
     sdl.SDL_GL_SwapWindow(self.screen);
-    sdl.SDL_Delay(17);
+    sdl.SDL_Delay(32);
 }
 
 pub fn clear(self: *Self) void {

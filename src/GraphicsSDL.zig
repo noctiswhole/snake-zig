@@ -148,7 +148,7 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator) Self {
     };
     
     // Create projection matrix 
-    const projection = zm.orthographicRhGl(800, 480, -1, 1);
+    const projection = zm.orthographicRhGl(640, 480, -1, 1);
     const uniformProjection = gl.getUniformLocation(program, "projection");
     // Transposition is needed because GLSL uses column-major matrices by default
     gl.programUniformMatrix4fv(program, uniformProjection, 1, gl.TRUE, zm.arrNPtr(&projection));
@@ -194,10 +194,8 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator) Self {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0);
 
     // Bind uniforms
-    const uniformRGB = gl.getUniformLocation(program, "hello");
-    std.debug.print("Uniform location: {d}", .{uniformRGB});
-    gl.programUniform3f(program, uniformRGB, 1, 0, 1);
-
+    const uniformRGB = gl.getUniformLocation(program, "drawColor");
+    gl.programUniform3f(program, uniformRGB, 0.06, 0.2, 0.06);
 
     return .{
         .program = program,
@@ -216,7 +214,7 @@ pub fn destroy(self: *Self) void {
 
 pub fn beginDraw(self: *Self) void {
     gl.useProgram(self.program);
-    gl.clearColor(1, 1, 1, 1);
+    gl.clearColor(0.6, 0.72, 0.06, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 }
 

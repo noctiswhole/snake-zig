@@ -9,7 +9,6 @@ pub fn build(b: *std.Build) !void {
     const exe = b.addExecutable(.{ .name = "snake-zig", .root_source_file = .{ .path = "src/main.zig" }, .optimize = optimize, .target = target });
 
     exe.linkLibC();
-    exe.linkSystemLibrary("raylib");
     exe.linkSystemLibrary("SDL2");
 
     exe.root_module.addImport("gl", b.createModule(.{
