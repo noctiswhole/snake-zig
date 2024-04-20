@@ -7,3 +7,17 @@ Made with Zig 0.12.0, SDL2, OpenGLES3
 Depends on system installed SDL2.
 
 Build with `zig build`
+
+## Controls
+
+Controls aren't remappable yet.
+
+`A` Left
+
+`S` Down
+
+`D` Right
+
+`W` Up
+
+`R` Restart
