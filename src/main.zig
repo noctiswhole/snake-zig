@@ -65,6 +65,23 @@ pub fn main() anyerror!void {
                         window.quit = true;
                     }
                 },
+                sdl.SDL_KEYDOWN => {
+                    if (event.key.keysym.scancode == sdl.SDL_SCANCODE_A) {
+                        snake.setDirectionToGo(.west);
+                    }
+                    if (event.key.keysym.scancode == sdl.SDL_SCANCODE_D) {
+                        snake.setDirectionToGo(.east);
+                    }
+                    if (event.key.keysym.scancode == sdl.SDL_SCANCODE_W) {
+                        snake.setDirectionToGo(.north);
+                    }
+                    if (event.key.keysym.scancode == sdl.SDL_SCANCODE_S) {
+                        snake.setDirectionToGo(.south);
+                    }
+                    if (event.key.keysym.scancode == sdl.SDL_SCANCODE_R) {
+                        snake.reset();
+                    }
+                },
                 else => {
                 }
             }
