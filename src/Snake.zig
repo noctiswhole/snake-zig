@@ -97,6 +97,8 @@ pub fn tick(self: *Snake) !void {
         return;
     }
 
+    self.directionCurrent = self.directionToGo;
+
     if (std.meta.eql(positionNew, self.foodPosition)) {
         // Grow snake if it finds food
         var newNode = try self.createNode(positionNew);
@@ -129,13 +131,13 @@ fn generateNewFood(self: *Snake) void {
 
 pub fn setDirectionToGo(self: *Snake, direction: Direction) void {
     // make sure player can't go directly backwards
-    if (self.directionToGo != .north and direction == .south) {
+    if (self.directionCurrent != .north and direction == .south) {
         self.directionToGo = direction;
-    } else if (self.directionToGo != .south and direction == .north) {
+    } else if (self.directionCurrent != .south and direction == .north) {
         self.directionToGo = direction;
-    } else if (self.directionToGo != .east and direction == .west) {
+    } else if (self.directionCurrent != .east and direction == .west) {
         self.directionToGo = direction;
-    } else if (self.directionToGo != .west and direction == .east) {
+    } else if (self.directionCurrent != .west and direction == .east) {
         self.directionToGo = direction;
     }
 }
