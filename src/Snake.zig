@@ -111,16 +111,17 @@ pub fn tick(self: *Snake) !void {
 }
 
 fn generateNewFood(self: *Snake) void {
+    const maxPos = gridWidth * gridHeight;
     const rnd = std.crypto.random;
-    var foodPos = rnd.intRangeAtMost(u32, 0, gridSize - self.length);
+    var foodPos = rnd.intRangeAtMost(u32, 0, maxPos - self.length);
     var pos: u16 = 0;
     while (foodPos > 0) {
         if (self.grid[pos % 40][pos / 40] != .snake) {
             foodPos -= 1;
         }
         pos += 1;
-        if (pos > gridSize) {
-            @panic("pos greater than gridSize");
+        if (pos > maxPos) {
+            @panic("pos greater than maxPos");
         }
     }
     self.foodPosition = .{ .x = @intCast(pos % 40), .y = @intCast(pos / 40) };
