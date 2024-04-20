@@ -59,6 +59,8 @@ program: gl.GLuint,
 vbo: gl.GLuint,
 vao: gl.GLuint,
 ebo: gl.GLuint,
+screenWidth: i64,
+screenHeight: i64,
 
 pub fn getProcAddress(p: ?*anyopaque, proc: [:0]const u8) ?*align(4) const anyopaque {
     _ = p;
@@ -139,7 +141,7 @@ fn compilerShaderPart(allocator: std.mem.Allocator, shader_type: gl.GLenum, sour
     return shader;
 }
 
-pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWidth: usize, screenHeight: usize) Self {
+pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWidth: u32, screenHeight: u32) Self {
 
     gl.load(context, getProcAddress) catch {
         @panic("Could not load GL context");
@@ -203,6 +205,8 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWi
         .vao = vao,
         .vbo = vbo,
         .ebo = ebo,
+        .screenWidth = screenWidth,
+        .screenHeight = screenHeight,
     };
 }
 
@@ -219,11 +223,11 @@ pub fn beginDraw(self: *Self) void {
     gl.clear(gl.COLOR_BUFFER_BIT);
 }
 
-pub fn drawSquare(self: *Self, x: u32, y: u32) void {
+pub fn drawSquare(self: *Self, x: i64, y: i64) void {
     gl.bindVertexArray(self.vao);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.ebo);
     const uniformPosition = gl.getUniformLocation(self.program, "position");
-    gl.programUniform2f(self.program, uniformPosition, @floatFromInt(x), @floatFromInt(y));
+    gl.programUniform2f(self.program, uniformPosition, @floatFromInt(x - @divExact(@as(i64, self.screenWidth), 2)), @floatFromInt(y - @divExact(@as(i64, self.screenHeight), 2)));
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, null);
     gl.bindVertexArray(0);
 }
