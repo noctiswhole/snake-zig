@@ -16,6 +16,9 @@ pub fn build(b: *std.Build) !void {
         .root_source_file = .{ .path = "libs/gl/gles3.zig"}
     }));
 
+    const zmath = b.dependency("zmath", .{});
+    exe.root_module.addImport("zmath", zmath.module("root"));
+
     const run_cmd = b.addRunArtifact(exe);
     const run_step = b.step("run", "Run snake-zig");
     run_step.dependOn(&run_cmd.step);

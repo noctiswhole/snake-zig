@@ -4,9 +4,17 @@ const sdl = @cImport({
 
 const gl = @import("gl");
 const std = @import("std");
+const math = std.math;
 const Vertex = @import("Vertex.zig");
-
+const zm = @import("zmath");
 const Self = @This();
+
+const RGB = struct {
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32,
+};
 
 const vertices = [_]Vertex{
     Vertex{
@@ -18,7 +26,7 @@ const vertices = [_]Vertex{
     },
     Vertex{
         // top right 
-        .x = 1,
+        .x = 15,
         .y = 0,
         .u = 1,
         .v = 0,
@@ -26,14 +34,14 @@ const vertices = [_]Vertex{
     Vertex{
         // bot left
         .x = 0,
-        .y = 1,
+        .y = 15,
         .u = 0,
         .v = 1,
     },
     Vertex{ 
         // bot right
-        .x = 1,
-        .y = 1,
+        .x = 15,
+        .y = 15,
         .u = 1,
         .v = 1,
     },
@@ -131,18 +139,25 @@ fn compilerShaderPart(allocator: std.mem.Allocator, shader_type: gl.GLenum, sour
 }
 
 pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator) Self {
+
     gl.load(context, getProcAddress) catch {
         @panic("Could not load GL context");
     };
     const program = compileShader(allocator, @embedFile("rectangle.vert"), @embedFile("rectangle.frag")) catch {
         @panic("Could not compile shaders");
     };
+    
+    // Create projection matrix 
+    const projection = zm.orthographicRhGl(800, 480, -1, 1);
+    const uniformProjection = gl.getUniformLocation(program, "projection");
+    // Transposition is needed because GLSL uses column-major matrices by default
+    gl.programUniformMatrix4fv(program, uniformProjection, 1, gl.TRUE, zm.arrNPtr(&projection));
 
+    // Initialize buffers
     var vao: gl.GLuint = undefined;
     var vbo: gl.GLuint = undefined;
     var ebo: gl.GLuint = undefined;
 
-    // Initialize buffers
     gl.genVertexArrays(1, &vao);
     if (vao == 0) {
         @panic("Could not generate vertex array");
@@ -178,6 +193,11 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator) Self {
     gl.bindVertexArray(0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0);
 
+    // Bind uniforms
+    const uniformRGB = gl.getUniformLocation(program, "hello");
+    std.debug.print("Uniform location: {d}", .{uniformRGB});
+    gl.programUniform3f(program, uniformRGB, 1, 0, 1);
+
 
     return .{
         .program = program,
@@ -196,11 +216,15 @@ pub fn destroy(self: *Self) void {
 
 pub fn beginDraw(self: *Self) void {
     gl.useProgram(self.program);
+    gl.clearColor(1, 1, 1, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
 }
 
-pub fn testDraw(self: *Self) void {
+pub fn drawSquare(self: *Self, x: u32, y: u32) void {
     gl.bindVertexArray(self.vao);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.ebo);
+    const uniformPosition = gl.getUniformLocation(self.program, "position");
+    gl.programUniform2f(self.program, uniformPosition, @floatFromInt(x), @floatFromInt(y));
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, null);
     gl.bindVertexArray(0);
 }

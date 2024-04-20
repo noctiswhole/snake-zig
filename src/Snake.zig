@@ -65,13 +65,13 @@ pub fn moveTo(self: *Snake, position: Position) void {
 pub fn tick(self: *Snake) !void {
     // Calculate new head position and signal exit if oob or collision
     var positionNew = self.head.position;
-    if (self.directionToGo == .north) {
+    if (self.directionToGo == .south) {
         if (positionNew.y == 0) {
             self.isGameRunning = false;
         } else {
             positionNew.y -= 1;
         }
-    } else if (self.directionToGo == .south) {
+    } else if (self.directionToGo == .north) {
         if (positionNew.y + 1 >= self.gridHeight) {
             self.isGameRunning = false;
         } else {

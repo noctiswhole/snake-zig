@@ -15,7 +15,7 @@ pub fn main() anyerror!void {
     const screenWidth = 800;
     const screenHeight = 480;
     const allocator = gpa.allocator();
-    // const gridSize = 16;
+    const gridSize = 16;
     // const gamepad = 0;
 
     var window = Window.create(screenWidth, screenHeight);
@@ -50,13 +50,13 @@ pub fn main() anyerror!void {
         window.clear();
 
         graphics.beginDraw();
-        graphics.testDraw();
 
 
         // Graphics.drawRectangle(snake.foodPosition.x * gridSize, snake.foodPosition.y * gridSize, gridSize, gridSize);
 
         var nextNode: ?*Node = snake.head;
         while (nextNode) |node| {
+            graphics.drawSquare(node.position.x * gridSize, node.position.y * gridSize);
             // Graphics.drawRectangle(node.position.x * gridSize, node.position.y * gridSize, gridSize, gridSize);
             nextNode = node.next;
         }
