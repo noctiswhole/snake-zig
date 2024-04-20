@@ -1,72 +1,133 @@
-// raylib-zig (c) Nikolas Wipper 2023
+const sdl = @cImport({
+    @cInclude("SDL2/SDL.h");
+});
 
 const std = @import("std");
 const Snake = @import("Snake.zig");
 const Node = @import("Node.zig");
-// const rl = @import("raylib");
-const rl = @cImport({
-    @cInclude("raylib.h");
-});
+const Window = @import("Window.zig");
+const Graphics = @import("Graphics.zig");
+const Input = @import("Input.zig");
+
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
 pub fn main() anyerror!void {
     // Initialization
     //--------------------------------------------------------------------------------------
-    const screenWidth = 800;
+    const screenWidth = 640;
     const screenHeight = 480;
-    const gridSize = 16;
-    const gamepad = 0;
+    const allocator = gpa.allocator();
+    // const gamepad = 0;
 
-    // rl.initWindow(screenWidth, screenHeight, "Snake");
-    rl.InitWindow(screenWidth, screenHeight, "Snake");
-    defer rl.CloseWindow(); // Close window and OpenGL context
+    var window = Window.create(screenWidth, screenHeight);
+    defer window.destroy();
 
-    rl.SetTargetFPS(30); // Set our game to run at 60 frames-per-second
-    var snake = try Snake.init(gpa.allocator(), 50, 30);
-    var scoreText: [12:0]u8 = undefined;
+    var graphics = Graphics.create(window.context, allocator, screenWidth, screenHeight);
+
+    var snake = try Snake.init(allocator);
+    // var scoreText: [12:0]u8 = undefined;
     //--------------------------------------------------------------------------------------
 
     // Main game loop
-    while (!rl.WindowShouldClose()) { // Detect window close button or ESC key
+    while (!window.shouldQuit()) { // Detect window close button or ESC key
         // Update
-        //----------------------------------------------------------------------------------
-        // TODO: Update your variables here
-        //----------------------------------------------------------------------------------
+
+        var event: sdl.SDL_Event = undefined;
+        while (sdl.SDL_PollEvent(&event) != 0) {
+            switch (event.type) {
+                sdl.SDL_QUIT => {
+                    window.quit = true;
+                },
+                sdl.SDL_JOYHATMOTION => {
+                    if (event.jhat.value == sdl.SDL_HAT_LEFT) {
+                        std.debug.print("Left pressed", .{});
+                        snake.setDirectionToGo(.west);
+                    }
+                    if (event.jhat.value == sdl.SDL_HAT_RIGHT) {
+                        std.debug.print("Right pressed", .{});
+                        snake.setDirectionToGo(.east);
+                    }
+                    if (event.jhat.value == sdl.SDL_HAT_UP) {
+                        std.debug.print("Up pressed", .{});
+                        snake.setDirectionToGo(.north);
+                    }
+                    if (event.jhat.value == sdl.SDL_HAT_DOWN) {
+                        std.debug.print("Down pressed", .{});
+                        snake.setDirectionToGo(.south);
+                    }
+                },
+                sdl.SDL_JOYBUTTONDOWN => {
+                    std.debug.print("Pressed {d}\n", .{event.jbutton.button});
+                    if (event.jbutton.button == 4) {
+                        snake.reset();
+                    }
+                    if (event.jbutton.button == 11) {
+                        window.quit = true;
+                    }
+                },
+                sdl.SDL_KEYDOWN => {
+                    if (event.key.keysym.scancode == sdl.SDL_SCANCODE_A) {
+                        snake.setDirectionToGo(.west);
+                    }
+                    if (event.key.keysym.scancode == sdl.SDL_SCANCODE_D) {
+                        snake.setDirectionToGo(.east);
+                    }
+                    if (event.key.keysym.scancode == sdl.SDL_SCANCODE_W) {
+                        snake.setDirectionToGo(.north);
+                    }
+                    if (event.key.keysym.scancode == sdl.SDL_SCANCODE_S) {
+                        snake.setDirectionToGo(.south);
+                    }
+                    if (event.key.keysym.scancode == sdl.SDL_SCANCODE_R) {
+                        snake.reset();
+                    }
+                },
+                else => {
+                }
+            }
+        }
+        // if (Input.isKeyPressed(.quit)) {
+        //     window.quit = true;
+        // } else if (Input.isKeyPressed(.left)) {
+        //     snake.setDirectionToGo(.west);
+        // } else if (Input.isKeyPressed(.right)) {
+        //     snake.setDirectionToGo(.east);
+        // } else if (Input.isKeyPressed(.down)) {
+        //     snake.setDirectionToGo(.south);
+        // } else if (Input.isKeyPressed(.up)) {
+        //     snake.setDirectionToGo(.north);
+        // } else if (Input.isKeyPressed(.reset)) {
+        //     snake.reset();
+        // }
 
         // Draw
-        //----------------------------------------------------------------------------------
-        rl.BeginDrawing();
-        defer rl.EndDrawing();
-        rl.ClearBackground(rl.RAYWHITE);
-        if (rl.IsKeyPressed(rl.KEY_A) or rl.IsGamepadButtonPressed(gamepad, rl.GAMEPAD_BUTTON_LEFT_FACE_LEFT)) {
-            snake.setDirectionToGo(.west);
-        } else if (rl.IsKeyPressed(rl.KEY_D) or rl.IsGamepadButtonPressed(gamepad, rl.GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) {
-            snake.setDirectionToGo(.east);
-        } else if (rl.IsKeyPressed(rl.KEY_S) or rl.IsGamepadButtonPressed(gamepad, rl.GAMEPAD_BUTTON_LEFT_FACE_DOWN)) {
-            snake.setDirectionToGo(.south);
-        } else if (rl.IsKeyPressed(rl.KEY_W) or rl.IsGamepadButtonPressed(gamepad, rl.GAMEPAD_BUTTON_LEFT_FACE_UP)) {
-            snake.setDirectionToGo(.north);
-        } else if (rl.IsKeyPressed(rl.KEY_R)) {
-            snake.reset();
-        }
+        window.beginDrawing();
+        defer window.endDrawing();
+        window.clear();
+
+        graphics.beginDraw();
+
+
+        // Graphics.drawRectangle(snake.foodPosition.x * gridSize, snake.foodPosition.y * gridSize, gridSize, gridSize);
+        graphics.drawSquare(snake.foodPosition.x * Snake.gridSize, snake.foodPosition.y * Snake.gridSize);
 
         var nextNode: ?*Node = snake.head;
-        rl.DrawRectangle(snake.foodPosition.x * gridSize, snake.foodPosition.y * gridSize, gridSize, gridSize, rl.RED);
-
         while (nextNode) |node| {
-            rl.DrawRectangle(node.position.x * gridSize, node.position.y * gridSize, gridSize, gridSize, rl.BLACK);
+            graphics.drawSquare(node.position.x * Snake.gridSize, node.position.y * Snake.gridSize);
+            // Graphics.drawRectangle(node.position.x * gridSize, node.position.y * gridSize,gridSize, gridSize);
             nextNode = node.next;
         }
         
         if (snake.isGameRunning) {
             try snake.tick();
         } else {
-            rl.DrawText("Press R to reset.", 315, 225, 20, rl.LIGHTGRAY);
+            // rl.DrawText("Press R to reset.", 315, 225, 20, rl.LIGHTGRAY);
         }
 
-        _ = try std.fmt.bufPrint(&scoreText, "Score: {d}\x00", .{snake.length - 2});
-        rl.DrawText(@ptrCast(&scoreText), 10, 10, 20, rl.LIGHTGRAY);
+        // _ = try std.fmt.bufPrint(&scoreText, "Score: {d}\x00", .{snake.length - 2});
+        // rl.DrawText(@ptrCast(&scoreText), 10, 10, 20, rl.LIGHTGRAY);
 
         //----------------------------------------------------------------------------------
+        Input.pollInput();
     }
 }

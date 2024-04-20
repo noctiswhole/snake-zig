@@ -5,21 +5,21 @@ const GridItem = enums.GridItem;
 const Direction = enums.Direction;
 const Position = @import("Position.zig");
 const Snake = @This();
-const gridSize = 50 * 30;
+const gridWidth = 40;
+const gridHeight = 30;
+pub const gridSize = 16;
 
-grid: [50][30]GridItem,
-length: usize,
+length: u32,
 head: *Node,
 tail: *Node,
-gridWidth: usize,
-gridHeight: usize,
 directionCurrent: Direction,
 directionToGo: Direction,
 allocator: std.mem.Allocator,
 foodPosition: Position,
 isGameRunning: bool,
+grid: [gridWidth][gridHeight]GridItem,
 
-pub fn init(alloc: std.mem.Allocator, comptime gridWidth: i32, comptime gridHeight: i32) !Snake {
+pub fn init(alloc: std.mem.Allocator) !Snake {
     var startHead = try alloc.create(Node);
     startHead.position = .{.x = 5, .y = 5};
     startHead.previous = null;
@@ -34,8 +34,6 @@ pub fn init(alloc: std.mem.Allocator, comptime gridWidth: i32, comptime gridHeig
         .length = 2,
         .head = startHead,
         .tail = startTail,
-        .gridWidth = gridWidth,
-        .gridHeight = gridHeight,
         .allocator = alloc,
         .directionCurrent = .east,
         .directionToGo = .east,
@@ -63,48 +61,70 @@ pub fn moveTo(self: *Snake, position: Position) void {
 
 // Advance snake forward and handle any collisions and food
 pub fn tick(self: *Snake) !void {
+    // Calculate new head position and signal exit if oob or collision
     var positionNew = self.head.position;
-    if (self.directionToGo == .north) {
-        positionNew.y -= 1;
-    } else if (self.directionToGo == .south) {
-        positionNew.y += 1;
-    } else if (self.directionToGo == .east) {
-        positionNew.x += 1;
-    } else if (self.directionToGo == .west) {
-        positionNew.x -= 1;
-    }
-    if (positionNew.x < 0 or positionNew.x >= self.gridWidth or positionNew.y < 0 or positionNew.y >= self.gridHeight) {
-        self.isGameRunning = false;
-    } else if (self.grid[@intCast(positionNew.x)][@intCast(positionNew.y)] == .snake) {
-        self.isGameRunning = false;
-    } else {
-        if (std.meta.eql(positionNew, self.foodPosition)) {
-            var newNode = try self.createNode(positionNew);
-            newNode.next = self.head;
-            self.head.previous = newNode;
-            self.head = newNode;
-            self.length += 1;
-            self.generateNewFood();
+    if (self.directionToGo == .south) {
+        if (positionNew.y == 0) {
+            self.isGameRunning = false;
         } else {
-            self.moveTo(positionNew);
+            positionNew.y -= 1;
         }
+    } else if (self.directionToGo == .north) {
+        if (positionNew.y + 1 >= gridHeight) {
+            self.isGameRunning = false;
+        } else {
+            positionNew.y += 1;
+        }
+    } else if (self.directionToGo == .east) {
+        if (positionNew.x + 1 >= gridWidth) {
+            self.isGameRunning = false;
+        } else {
+            positionNew.x += 1;
+        }
+    } else if (self.directionToGo == .west) {
+        if (positionNew.x == 0) {
+            self.isGameRunning = false;
+        } else {
+            positionNew.x -= 1;
+        }
+    }
+
+    if (self.grid[positionNew.x][positionNew.y] == .snake) {
+        self.isGameRunning = false;
+    }
+
+    if (!self.isGameRunning) {
+        return;
+    }
+
+    if (std.meta.eql(positionNew, self.foodPosition)) {
+        // Grow snake if it finds food
+        var newNode = try self.createNode(positionNew);
+        newNode.next = self.head;
+        self.head.previous = newNode;
+        self.head = newNode;
+        self.length += 1;
+        self.generateNewFood();
+    } else {
+        self.moveTo(positionNew);
     }
 }
 
 fn generateNewFood(self: *Snake) void {
+    const maxPos = gridWidth * gridHeight;
     const rnd = std.crypto.random;
-    var foodPos = rnd.intRangeAtMost(i32, 0, @intCast(gridSize - self.length));
+    var foodPos = rnd.intRangeAtMost(u32, 0, maxPos - self.length);
     var pos: u16 = 0;
     while (foodPos > 0) {
-        if (self.grid[pos % 50][pos / 50] != .snake) {
+        if (self.grid[pos % 40][pos / 40] != .snake) {
             foodPos -= 1;
         }
         pos += 1;
-        if (pos > gridSize) {
-            @panic("pos greater than gridSize");
+        if (pos > maxPos) {
+            @panic("pos greater than maxPos");
         }
     }
-    self.foodPosition = .{ .x = @intCast(pos % 50), .y = @intCast(pos / 50) };
+    self.foodPosition = .{ .x = @intCast(pos % 40), .y = @intCast(pos / 40) };
 }
 
 pub fn setDirectionToGo(self: *Snake, direction: Direction) void {
@@ -148,6 +168,6 @@ pub fn reset(self: *Snake) void {
     self.directionToGo = .east;
     self.length = 2;
     self.generateNewFood();
-    self.grid = .{.{.blank} ** 30} ** 50;
+    self.grid = .{.{.blank} ** gridHeight} ** gridWidth;
     self.isGameRunning = true;
 }

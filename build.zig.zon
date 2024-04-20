@@ -2,6 +2,9 @@
     .name = "snake-zig",
     .version = "0.0.1",
     .dependencies = .{
+        .zmath = .{
+            .path = "libs/zmath",
+        },
     },
     .paths = .{""},
 }
