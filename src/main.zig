@@ -4,7 +4,7 @@ const std = @import("std");
 const Snake = @import("Snake.zig");
 const Node = @import("Node.zig");
 const Window = @import("WindowSDL.zig");
-const Graphics = @import("GraphicsRaylib.zig");
+const Graphics = @import("GraphicsSDL.zig");
 const Input = @import("InputSDL.zig");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -14,20 +14,27 @@ pub fn main() anyerror!void {
     //--------------------------------------------------------------------------------------
     const screenWidth = 800;
     const screenHeight = 480;
-    const gridSize = 16;
+    const allocator = gpa.allocator();
+    // const gridSize = 16;
     // const gamepad = 0;
 
     var window = Window.create(screenWidth, screenHeight);
     defer window.destroy();
 
-    var snake = try Snake.init(gpa.allocator(), 50, 30);
+    const graphics = Graphics.create(window.context, allocator);
+    _ = graphics;
+
+    var snake = try Snake.init(allocator, 50, 30);
     // var scoreText: [12:0]u8 = undefined;
     //--------------------------------------------------------------------------------------
 
     // Main game loop
     while (!window.shouldQuit()) { // Detect window close button or ESC key
         // Update
-        if (Input.isKeyPressed(.left)) {
+        Input.pollInput();
+        if (Input.isKeyPressed(.quit)) {
+            window.quit = true;
+        } else if (Input.isKeyPressed(.left)) {
             snake.setDirectionToGo(.west);
         } else if (Input.isKeyPressed(.right)) {
             snake.setDirectionToGo(.east);
@@ -40,15 +47,15 @@ pub fn main() anyerror!void {
         }
 
         // Draw
-        Graphics.beginDrawing();
-        defer Graphics.endDrawing();
-        Graphics.clear();
+        window.beginDrawing();
+        defer window.endDrawing();
+        window.clear();
 
-        Graphics.drawRectangle(snake.foodPosition.x * gridSize, snake.foodPosition.y * gridSize, gridSize, gridSize);
+        // Graphics.drawRectangle(snake.foodPosition.x * gridSize, snake.foodPosition.y * gridSize, gridSize, gridSize);
 
         var nextNode: ?*Node = snake.head;
         while (nextNode) |node| {
-            Graphics.drawRectangle(node.position.x * gridSize, node.position.y * gridSize, gridSize, gridSize);
+            // Graphics.drawRectangle(node.position.x * gridSize, node.position.y * gridSize, gridSize, gridSize);
             nextNode = node.next;
         }
         

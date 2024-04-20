@@ -12,9 +12,9 @@ pub fn build(b: *std.Build) !void {
     exe.linkSystemLibrary("raylib");
     exe.linkSystemLibrary("SDL2");
 
-    // exe.root_module.addImport("gl", b.createModule(.{
-    //     .root_source_file = .{ .path = "libs/gl/gles3.zig"}
-    // }));
+    exe.root_module.addImport("gl", b.createModule(.{
+        .root_source_file = .{ .path = "libs/gl/gles3.zig"}
+    }));
 
     const run_cmd = b.addRunArtifact(exe);
     const run_step = b.step("run", "Run snake-zig");

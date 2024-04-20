@@ -17,4 +17,5 @@ pub const Key = enum {
     left,
     right,
     reset,
+    quit,
 };

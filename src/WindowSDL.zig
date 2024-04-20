@@ -2,6 +2,7 @@ const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
 });
 
+
 const Self = @This();
 screen: *sdl.SDL_Window,
 context: sdl.SDL_GLContext,
@@ -42,26 +43,21 @@ pub fn shouldQuit(self: *Self) bool {
     return self.quit;
 }
 
-// pub fn handleInput(self: *Self) void {
-//     var event: c.SDL_Event = undefined;
-//     while (c.SDL_PollEvent(&event) != 0) {
-//         switch (event.type) {
-//             c.SDL_QUIT => {
-//                 self.shouldQuit = true;
-//             },
-//             else => {},
-//         }
-//     }
-// }
-//
-// pub fn draw(self: Self) void {
-//     c.SDL_GL_SwapWindow(self.screen);
-//     c.SDL_Delay(17);
-// }
-//
-pub fn destroy(self: Self) void {
+pub fn destroy(self: *Self) void {
     sdl.SDL_Quit();
     sdl.SDL_DestroyWindow(self.screen);
     sdl.SDL_DestroyRenderer(self.renderer);
     sdl.SDL_GL_DeleteContext(self.context);
+}
+
+pub fn beginDrawing(_: Self) void {
+}
+
+pub fn endDrawing(self: *Self) void {
+    sdl.SDL_GL_SwapWindow(self.screen);
+    sdl.SDL_Delay(17);
+}
+
+pub fn clear(self: *Self) void {
+    _ = sdl.SDL_RenderClear(self.renderer);
 }
