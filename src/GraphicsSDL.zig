@@ -8,7 +8,48 @@ const Vertex = @import("Vertex.zig");
 
 const Self = @This();
 
+const vertices = [_]Vertex{
+    Vertex{
+        // top left
+        .x = 0,
+        .y = 0,
+        .u = 0,
+        .v = 0,
+    },
+    Vertex{
+        // top right 
+        .x = 1,
+        .y = 0,
+        .u = 1,
+        .v = 0,
+    },
+    Vertex{
+        // bot left
+        .x = 0,
+        .y = 1,
+        .u = 0,
+        .v = 1,
+    },
+    Vertex{ 
+        // bot right
+        .x = 1,
+        .y = 1,
+        .u = 1,
+        .v = 1,
+    },
+};
+
+const indices = [6]c_uint{
+    // first triangle
+    0, 1, 3, 
+    // second triangle
+    0, 2, 3, 
+};
+
 program: gl.GLuint,
+vbo: gl.GLuint,
+vao: gl.GLuint,
+ebo: gl.GLuint,
 
 pub fn getProcAddress(p: ?*anyopaque, proc: [:0]const u8) ?*align(4) const anyopaque {
     _ = p;
@@ -92,16 +133,74 @@ fn compilerShaderPart(allocator: std.mem.Allocator, shader_type: gl.GLenum, sour
 pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator) Self {
     gl.load(context, getProcAddress) catch {
         @panic("Could not load GL context");
-};
+    };
     const program = compileShader(allocator, @embedFile("rectangle.vert"), @embedFile("rectangle.frag")) catch {
         @panic("Could not compile shaders");
     };
 
+    var vao: gl.GLuint = undefined;
+    var vbo: gl.GLuint = undefined;
+    var ebo: gl.GLuint = undefined;
+
+    // Initialize buffers
+    gl.genVertexArrays(1, &vao);
+    if (vao == 0) {
+        @panic("Could not generate vertex array");
+    }
+
+    gl.genBuffers(1, &vbo);
+    if (vbo == 0) {
+        @panic("Could not generate vertex buffer");
+    }
+
+    gl.genBuffers(1, &ebo);
+    if (ebo == 0) {
+        @panic("Could not generate ebo buffer");
+    }
+
+    // Bind buffers
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, @sizeOf(@TypeOf(vertices)), &vertices, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, 6 * @sizeOf(c_uint), &indices, gl.STATIC_DRAW);
+    
+    // bind data
+    // position
+    gl.enableVertexAttribArray(0); 
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, gl.FALSE, @sizeOf(Vertex), @ptrFromInt(@offsetOf(Vertex, "x")));
+
+    // uv
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, gl.FALSE, @sizeOf(Vertex), @ptrFromInt(@offsetOf(Vertex, "u")));
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, 0);
+    gl.bindVertexArray(0);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0);
+
+
     return .{
         .program = program,
+        .vao = vao,
+        .vbo = vbo,
+        .ebo = ebo,
     };
 }
 
 pub fn destroy(self: *Self) void {
     gl.deleteProgram(self.program);
+    gl.deleteVertexArrays(1, &self.vao);
+    gl.deleteBuffers(1, &self.vbo);
+    gl.deleteBuffers(1, &self.ebo);
+}
+
+pub fn beginDraw(self: *Self) void {
+    gl.useProgram(self.program);
+}
+
+pub fn testDraw(self: *Self) void {
+    gl.bindVertexArray(self.vao);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.ebo);
+    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, null);
+    gl.bindVertexArray(0);
 }

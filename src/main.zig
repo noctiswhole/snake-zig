@@ -21,8 +21,7 @@ pub fn main() anyerror!void {
     var window = Window.create(screenWidth, screenHeight);
     defer window.destroy();
 
-    const graphics = Graphics.create(window.context, allocator);
-    _ = graphics;
+    var graphics = Graphics.create(window.context, allocator);
 
     var snake = try Snake.init(allocator, 50, 30);
     // var scoreText: [12:0]u8 = undefined;
@@ -31,7 +30,6 @@ pub fn main() anyerror!void {
     // Main game loop
     while (!window.shouldQuit()) { // Detect window close button or ESC key
         // Update
-        Input.pollInput();
         if (Input.isKeyPressed(.quit)) {
             window.quit = true;
         } else if (Input.isKeyPressed(.left)) {
@@ -51,6 +49,10 @@ pub fn main() anyerror!void {
         defer window.endDrawing();
         window.clear();
 
+        graphics.beginDraw();
+        graphics.testDraw();
+
+
         // Graphics.drawRectangle(snake.foodPosition.x * gridSize, snake.foodPosition.y * gridSize, gridSize, gridSize);
 
         var nextNode: ?*Node = snake.head;
@@ -69,5 +71,6 @@ pub fn main() anyerror!void {
         // rl.DrawText(@ptrCast(&scoreText), 10, 10, 20, rl.LIGHTGRAY);
 
         //----------------------------------------------------------------------------------
+        Input.pollInput();
     }
 }
