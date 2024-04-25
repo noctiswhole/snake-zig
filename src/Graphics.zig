@@ -1,6 +1,10 @@
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
 });
+const ttf = @cImport({
+    @cInclude("SDL2/SDL_ttf.h");
+});
+
 
 const gl = @import("gl");
 const std = @import("std");
@@ -27,7 +31,7 @@ const vertices = [_]Vertex{
     },
     Vertex{
         // top right 
-        .x = gridSize - 1,
+        .x = 1,
         .y = 0,
         .u = 1,
         .v = 0,
@@ -35,14 +39,14 @@ const vertices = [_]Vertex{
     Vertex{
         // bot left
         .x = 0,
-        .y = gridSize - 1,
+        .y = 1,
         .u = 0,
         .v = 1,
     },
     Vertex{ 
         // bot right
-        .x = gridSize - 1,
-        .y = gridSize - 1,
+        .x = 1,
+        .y = 1,
         .u = 1,
         .v = 1,
     },
@@ -182,7 +186,7 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWi
     gl.bufferData(gl.ARRAY_BUFFER, @sizeOf(@TypeOf(vertices)), &vertices, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, 6 * @sizeOf(c_uint), &indices, gl.STATIC_DRAW);
-    
+
     // bind data
     // position
     gl.enableVertexAttribArray(0); 
@@ -210,6 +214,17 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWi
     };
 }
 
+pub fn createFontTexture(text: [*c]const u8) *ttf.SDL_Surface {
+    const font = ttf.TTF_OpenFont("Beanstalk.ttf", 12);
+    defer ttf.TTF_CloseFont(font);
+    const fontTexture = ttf.TTF_RenderText_Blended(font, text, .{ .r = 0, .g = 0, .b = 0}); 
+    return fontTexture;
+}
+
+pub fn destroySDLSurface(texture: *sdl.SDL_Surface) void {
+    ttf.SDL_FreeSurface(texture);
+}
+
 pub fn destroy(self: *Self) void {
     gl.deleteProgram(self.program);
     gl.deleteVertexArrays(1, &self.vao);
@@ -217,17 +232,27 @@ pub fn destroy(self: *Self) void {
     gl.deleteBuffers(1, &self.ebo);
 }
 
-pub fn beginDraw(self: *Self) void {
-    gl.useProgram(self.program);
+pub fn beginDraw(_: *Self) void {
+}
+
+pub fn clear(_: *Self) void {
     gl.clearColor(0.6, 0.72, 0.06, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 }
 
-pub fn drawSquare(self: *Self, x: i64, y: i64) void {
+pub fn drawRectangle(self: *Self, x: i64, y: i64, w: i64, h: i64) void {
+    const transform = zm.mul(zm.scaling(@floatFromInt(w), @floatFromInt(h), 0), zm.translation(@floatFromInt(x - @divFloor(self.screenWidth, 2)), @floatFromInt(y - @divFloor(self.screenHeight, 2)), 0));
+
     gl.bindVertexArray(self.vao);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.ebo);
-    const uniformPosition = gl.getUniformLocation(self.program, "position");
-    gl.programUniform2f(self.program, uniformPosition, @floatFromInt(x - @divExact(@as(i64, self.screenWidth), 2)), @floatFromInt(y - @divExact(@as(i64, self.screenHeight), 2)));
+    const uniformTransform = gl.getUniformLocation(self.program, "transform");
+    gl.uniformMatrix4fv(uniformTransform, 1, gl.FALSE, zm.arrNPtr(&transform));
+
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, null);
+}
+
+pub fn drawSquare(self: *Self, x: i64, y: i64) void {
+    gl.useProgram(self.program);
+    self.drawRectangle(x, y, 15, 15);
     gl.bindVertexArray(0);
 }

@@ -103,7 +103,7 @@ pub fn main() anyerror!void {
         // Draw
         window.beginDrawing();
         defer window.endDrawing();
-        window.clear();
+        graphics.clear();
 
         graphics.beginDraw();
 
