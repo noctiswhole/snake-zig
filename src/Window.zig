@@ -17,13 +17,7 @@ pub fn create(width: u32, height: u32) Self {
         sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
         @panic("");
     }
-    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_PROFILE_MASK, sdl.SDL_GL_CONTEXT_PROFILE_ES);
-    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_MINOR_VERSION, 1);
-    _ = sdl.SDL_GL_SetSwapInterval(0);
-    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DOUBLEBUFFER, 1);
-    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DEPTH_SIZE, 24);
-    const screen = sdl.SDL_CreateWindow("My Game Window", sdl.SDL_WINDOWPOS_CENTERED, sdl.SDL_WINDOWPOS_CENTERED, @intCast(width), @intCast(height), sdl.SDL_WINDOW_OPENGL) orelse
+    const screen = sdl.SDL_CreateWindow("Snake", sdl.SDL_WINDOWPOS_CENTERED, sdl.SDL_WINDOWPOS_CENTERED, @intCast(width), @intCast(height), sdl.SDL_WINDOW_OPENGL) orelse
     {
         sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
         @panic("");
@@ -33,6 +27,12 @@ pub fn create(width: u32, height: u32) Self {
         @panic("");
     };
 
+    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_PROFILE_MASK, sdl.SDL_GL_CONTEXT_PROFILE_ES);
+    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    _ = sdl.SDL_GL_SetSwapInterval(0);
+    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DOUBLEBUFFER, 1);
+    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DEPTH_SIZE, 24);
     const context = sdl.SDL_GL_CreateContext(screen);
 
 
