@@ -1,11 +1,4 @@
-const sdl = @cImport({
-    @cInclude("SDL2/SDL.h");
-});
-const ttf = @cImport({
-    @cInclude("SDL2/SDL_ttf.h");
-});
-
-
+const sdl = @import("Window.zig").sdl;
 const gl = @import("gl");
 const std = @import("std");
 const math = std.math;
@@ -27,44 +20,46 @@ const vertices = [_]Vertex{
         .x = 0,
         .y = 0,
         .u = 0,
-        .v = 0,
+        .v = 1,
     },
     Vertex{
         // top right 
         .x = 1,
         .y = 0,
         .u = 1,
-        .v = 0,
+        .v = 1,
     },
     Vertex{
         // bot left
         .x = 0,
         .y = 1,
         .u = 0,
-        .v = 1,
+        .v = 0,
     },
     Vertex{ 
         // bot right
         .x = 1,
         .y = 1,
         .u = 1,
-        .v = 1,
+        .v = 0,
     },
 };
 
 const indices = [6]c_uint{
     // first triangle
-    0, 1, 3, 
+    2, 3, 0,  
     // second triangle
-    0, 2, 3, 
+    3, 0, 1, 
 };
 
 program: gl.GLuint,
+texProgram: gl.GLuint,
 vbo: gl.GLuint,
 vao: gl.GLuint,
 ebo: gl.GLuint,
 screenWidth: i64,
 screenHeight: i64,
+scoreTexture: gl.GLuint,
 
 pub fn getProcAddress(p: ?*anyopaque, proc: [:0]const u8) ?*align(4) const anyopaque {
     _ = p;
@@ -153,12 +148,10 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWi
     const program = compileShader(allocator, @embedFile("rectangle.vert"), @embedFile("rectangle.frag")) catch {
         @panic("Could not compile shaders");
     };
-    
-    // Create projection matrix 
-    const projection = zm.orthographicRhGl(@floatFromInt(screenWidth), @floatFromInt(screenHeight), -1, 1);
-    const uniformProjection = gl.getUniformLocation(program, "projection");
-    // Transposition is needed because GLSL uses column-major matrices by default
-    gl.programUniformMatrix4fv(program, uniformProjection, 1, gl.TRUE, zm.arrNPtr(&projection));
+
+    const texProgram = compileShader(allocator, @embedFile("rectangle_tex.vert"), @embedFile("rectangle_tex.frag")) catch {
+        @panic("Could not compile shaders");
+    };
 
     // Initialize buffers
     var vao: gl.GLuint = undefined;
@@ -200,9 +193,35 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWi
     gl.bindVertexArray(0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0);
 
-    // Bind uniforms
-    const uniformRGB = gl.getUniformLocation(program, "drawColor");
-    gl.programUniform3f(program, uniformRGB, 0.06, 0.2, 0.06);
+    // gl.enable(gl.CULL_FACE);
+    gl.enable(gl.BLEND);
+
+    var texture: gl.GLuint = undefined;
+    gl.genTextures(1, &texture);
+    gl.activeTexture(gl.TEXTURE0);
+
+    // gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
+    // gl.texImage3D(gl.TEXTURE_2D_ARRAY, 0, gl.RGBA, fontSurface.*.w, fontSurface.*.h, 16, 0, mode, gl.UNSIGNED_BYTE, fontSurface.*.pixels);
+    gl.texImage3D(gl.TEXTURE_2D_ARRAY, 0, gl.RGBA, 16, 32, 10, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    // gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.UNSIGNED_BYTE, 16, 32, 1);
+
+    var buf: [6]u8 = undefined;
+    for (0..10) |i| {
+        const numAsString = std.fmt.bufPrint(&buf, "{d}.png\x00", .{i}) catch {
+            @panic("Failed to format string.");
+        };
+        const fontSurface = sdl.IMG_Load(numAsString.ptr) orelse {
+            @panic("Missing texture");
+        };
+        defer sdl.SDL_FreeSurface(fontSurface);
+        gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, @intCast(i), 16, 32, 1, gl.RGBA, gl.UNSIGNED_BYTE, fontSurface.*.pixels);
+    }
+    // gl.texImage2D(gl.TEXTURE_2D, 0, @intCast(mode), fontSurface.*.w, fontSurface.*.h, 0, mode, gl.UNSIGNED_BYTE, fontSurface.*.pixels);
+    gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, 0);
+
 
     return .{
         .program = program,
@@ -211,25 +230,18 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWi
         .ebo = ebo,
         .screenWidth = screenWidth,
         .screenHeight = screenHeight,
+        .scoreTexture = texture,
+        .texProgram = texProgram,
     };
 }
 
-pub fn createFontTexture(text: [*c]const u8) *ttf.SDL_Surface {
-    const font = ttf.TTF_OpenFont("Beanstalk.ttf", 12);
-    defer ttf.TTF_CloseFont(font);
-    const fontTexture = ttf.TTF_RenderText_Blended(font, text, .{ .r = 0, .g = 0, .b = 0}); 
-    return fontTexture;
-}
-
-pub fn destroySDLSurface(texture: *sdl.SDL_Surface) void {
-    ttf.SDL_FreeSurface(texture);
-}
-
 pub fn destroy(self: *Self) void {
+    sdl.TTF_Quit();
     gl.deleteProgram(self.program);
     gl.deleteVertexArrays(1, &self.vao);
     gl.deleteBuffers(1, &self.vbo);
     gl.deleteBuffers(1, &self.ebo);
+    gl.deleteTextures(1, &self.scoreTexture);
 }
 
 pub fn beginDraw(_: *Self) void {
@@ -240,19 +252,48 @@ pub fn clear(_: *Self) void {
     gl.clear(gl.COLOR_BUFFER_BIT);
 }
 
-pub fn drawRectangle(self: *Self, x: i64, y: i64, w: i64, h: i64) void {
+pub fn drawScore(self: *Self, score: usize) void {
+    _ = score;
+    gl.useProgram(self.texProgram);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, self.scoreTexture);
+
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+    const projection = zm.orthographicRhGl(@floatFromInt(640), @floatFromInt(480), -1, 1);
+    const uniformProjection = gl.getUniformLocation(self.texProgram, "projection");
+    gl.uniformMatrix4fv(uniformProjection, 1, gl.TRUE, zm.arrNPtr(&projection));
+
+    const uniformDigit = gl.getUniformLocation(self.texProgram, "digit");
+    gl.uniform1i(uniformDigit, 3);
+    self.drawRectangle(self.program, 0, 0, 16, 32);
+
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, 0);
+    gl.useProgram(0);
+}
+
+pub fn drawRectangle(self: *Self, program: gl.GLuint, x: i64, y: i64, w: i64, h: i64) void {
     const transform = zm.mul(zm.scaling(@floatFromInt(w), @floatFromInt(h), 0), zm.translation(@floatFromInt(x - @divFloor(self.screenWidth, 2)), @floatFromInt(y - @divFloor(self.screenHeight, 2)), 0));
 
     gl.bindVertexArray(self.vao);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.ebo);
-    const uniformTransform = gl.getUniformLocation(self.program, "transform");
+    const uniformTransform = gl.getUniformLocation(program, "transform");
     gl.uniformMatrix4fv(uniformTransform, 1, gl.FALSE, zm.arrNPtr(&transform));
 
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, null);
+    gl.bindVertexArray(0);
 }
 
 pub fn drawSquare(self: *Self, x: i64, y: i64) void {
     gl.useProgram(self.program);
-    self.drawRectangle(x, y, 15, 15);
-    gl.bindVertexArray(0);
+    const projection = zm.orthographicRhGl(@floatFromInt(640), @floatFromInt(480), -1, 1);
+    const uniformProjection = gl.getUniformLocation(self.program, "projection");
+    // Transposition is needed because GLSL uses column-major matrices by default
+    gl.programUniformMatrix4fv(self.program, uniformProjection, 1, gl.TRUE, zm.arrNPtr(&projection));
+    const uniformRGB = gl.getUniformLocation(self.program, "drawColor");
+    gl.programUniform3f(self.program, uniformRGB, 0.06, 0.2, 0.06);
+    self.drawRectangle(self.program, x, y, 15, 15);
 }

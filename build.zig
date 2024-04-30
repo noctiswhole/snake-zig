@@ -10,6 +10,8 @@ pub fn build(b: *std.Build) !void {
 
     exe.linkLibC();
     exe.linkSystemLibrary("SDL2");
+    exe.linkSystemLibrary("SDL2_ttf");
+    exe.linkSystemLibrary("SDL2_image");
 
     exe.root_module.addImport("gl", b.createModule(.{
         .root_source_file = .{ .path = "libs/gl/gles3.zig"}
