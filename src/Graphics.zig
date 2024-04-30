@@ -253,7 +253,6 @@ pub fn clear(_: *Self) void {
 }
 
 pub fn drawScore(self: *Self, score: usize) void {
-    _ = score;
     gl.useProgram(self.texProgram);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, self.scoreTexture);
@@ -267,9 +266,18 @@ pub fn drawScore(self: *Self, score: usize) void {
     const uniformProjection = gl.getUniformLocation(self.texProgram, "projection");
     gl.uniformMatrix4fv(uniformProjection, 1, gl.TRUE, zm.arrNPtr(&projection));
 
-    const uniformDigit = gl.getUniformLocation(self.texProgram, "digit");
-    gl.uniform1i(uniformDigit, 3);
-    self.drawRectangle(self.program, 0, 0, 16, 32);
+    const uniformIndex = gl.getUniformLocation(self.texProgram, "index");
+
+    var tempscore = score;
+    var offset: i64 = 0;
+
+    while (tempscore > 0 or offset == 0) {
+        const digit = tempscore % 10;
+        gl.uniform1ui(uniformIndex, @intCast(digit));
+        self.drawRectangle(self.program, 624 - 16 * offset, 448, 16, 32);
+        tempscore = tempscore / 10;
+        offset = offset + 1;
+    }
 
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, 0);
     gl.useProgram(0);

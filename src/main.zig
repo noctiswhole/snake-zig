@@ -25,7 +25,6 @@ pub fn main() anyerror!void {
     var graphics = Graphics.create(window.context, allocator, screenWidth, screenHeight);
 
     var snake = try Snake.init(allocator);
-    // var scoreText: [12:0]u8 = undefined;
     //--------------------------------------------------------------------------------------
 
     // Main game loop
@@ -86,26 +85,11 @@ pub fn main() anyerror!void {
                 }
             }
         }
-        // if (Input.isKeyPressed(.quit)) {
-        //     window.quit = true;
-        // } else if (Input.isKeyPressed(.left)) {
-        //     snake.setDirectionToGo(.west);
-        // } else if (Input.isKeyPressed(.right)) {
-        //     snake.setDirectionToGo(.east);
-        // } else if (Input.isKeyPressed(.down)) {
-        //     snake.setDirectionToGo(.south);
-        // } else if (Input.isKeyPressed(.up)) {
-        //     snake.setDirectionToGo(.north);
-        // } else if (Input.isKeyPressed(.reset)) {
-        //     snake.reset();
-        // }
 
         // Draw
         window.beginDrawing();
         defer window.endDrawing();
         graphics.clear();
-
-        graphics.beginDraw();
 
 
         // Graphics.drawRectangle(snake.foodPosition.x * gridSize, snake.foodPosition.y * gridSize, gridSize, gridSize);
@@ -124,10 +108,7 @@ pub fn main() anyerror!void {
             // rl.DrawText("Press R to reset.", 315, 225, 20, rl.LIGHTGRAY);
         }
 
-        // _ = try std.fmt.bufPrint(&scoreText, "Score: {d}\x00", .{snake.length - 2});
-        // rl.DrawText(@ptrCast(&scoreText), 10, 10, 20, rl.LIGHTGRAY);
+        graphics.drawScore(snake.length - 2);
 
-        //----------------------------------------------------------------------------------
-        Input.pollInput();
     }
 }
