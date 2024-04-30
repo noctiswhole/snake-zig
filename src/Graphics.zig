@@ -99,7 +99,7 @@ fn compileShader(allocator: std.mem.Allocator, vertex_source: [:0]const u8, frag
 
         gl.getProgramInfoLog(program, @intCast(info_log.len), null, info_log.ptr);
 
-        std.log.info("failed to compile shader:\n{any}", .{info_log});
+        std.log.info("failed to compile shader:\n{s}", .{info_log});
 
         return error.InvalidShader;
     }
@@ -198,7 +198,6 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWi
 
     var texture: gl.GLuint = undefined;
     gl.genTextures(1, &texture);
-    gl.activeTexture(gl.TEXTURE0);
 
     // gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
@@ -238,6 +237,7 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWi
 pub fn destroy(self: *Self) void {
     sdl.TTF_Quit();
     gl.deleteProgram(self.program);
+    gl.deleteProgram(self.texProgram);
     gl.deleteVertexArrays(1, &self.vao);
     gl.deleteBuffers(1, &self.vbo);
     gl.deleteBuffers(1, &self.ebo);
@@ -254,7 +254,6 @@ pub fn clear(_: *Self) void {
 
 pub fn drawScore(self: *Self, score: usize) void {
     gl.useProgram(self.texProgram);
-    gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, self.scoreTexture);
 
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -274,7 +273,7 @@ pub fn drawScore(self: *Self, score: usize) void {
     while (tempscore > 0 or offset == 0) {
         const digit = tempscore % 10;
         gl.uniform1ui(uniformIndex, @intCast(digit));
-        self.drawRectangle(self.program, 624 - 16 * offset, 448, 16, 32);
+        self.drawRectangle(self.texProgram, 624 - 16 * offset, 448, 16, 32);
         tempscore = tempscore / 10;
         offset = offset + 1;
     }
@@ -300,8 +299,8 @@ pub fn drawSquare(self: *Self, x: i64, y: i64) void {
     const projection = zm.orthographicRhGl(@floatFromInt(640), @floatFromInt(480), -1, 1);
     const uniformProjection = gl.getUniformLocation(self.program, "projection");
     // Transposition is needed because GLSL uses column-major matrices by default
-    gl.programUniformMatrix4fv(self.program, uniformProjection, 1, gl.TRUE, zm.arrNPtr(&projection));
+    gl.uniformMatrix4fv(uniformProjection, 1, gl.TRUE, zm.arrNPtr(&projection));
     const uniformRGB = gl.getUniformLocation(self.program, "drawColor");
-    gl.programUniform3f(self.program, uniformRGB, 0.06, 0.2, 0.06);
+    gl.uniform3f(uniformRGB, 0.06, 0.2, 0.06);
     self.drawRectangle(self.program, x, y, 15, 15);
 }

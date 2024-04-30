@@ -8,11 +8,11 @@ out vec4 color;
 uniform lowp sampler2DArray tex;
 
 void main() {
-  vec4 texcolor = texture(tex, vec3(uv, vIndex));
+  highp vec4 texcolor = texture(tex, vec3(uv, vIndex));
   if (texcolor .rgb == vec3(1, 0, 1)) {
       discard;
     }
-  color = vec4(texcolor.rgb, 0);
+  color = vec4(texcolor.rgb, 1);
 
 }
 
