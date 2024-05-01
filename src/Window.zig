@@ -67,7 +67,6 @@ pub fn beginDrawing(_: Self) void {
 
 pub fn endDrawing(self: *Self) void {
     sdl.SDL_GL_SwapWindow(self.screen);
-    sdl.SDL_Delay(32);
 }
 
 pub fn clear(self: *Self) void {
