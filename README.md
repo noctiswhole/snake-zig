@@ -8,6 +8,10 @@ Depends on system installed SDL2.
 
 Build with `zig build`
 
+To build for KNULLI:
+
+`zig build --search-prefix /path/to/buildroot/sysroot/usr/ -Dtarget=aarch64-linux-gnu -Dcpu=cortex_a53 -Doptimize=ReleaseSafe`
+
 ## Controls
 
 Controls aren't remappable yet.
