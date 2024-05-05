@@ -1,24 +1,50 @@
-const sdl = @cImport({
-    @cInclude("SDL2/SDL.h");
-});
 
 const std = @import("std");
+const sdl = @import("sdl");
+// const sdl = @cImport({
+//     @cInclude("SDL2/SDL.h");
+// });
 const Snake = @import("Snake.zig");
 const Node = @import("Node.zig");
 const Window = @import("Window.zig");
 const Graphics = @import("Graphics.zig");
 const Input = @import("Input.zig");
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const builtin = @import("builtin");
+const assert = std.debug.assert;
 
-pub fn main() anyerror!void {
-    // Initialization
-    //--------------------------------------------------------------------------------------
+// NOTE(jae): 2024-02-24
+// Force allocator to use c_allocator for emscripten, this is a workaround that resolves memory issues with Emscripten
+// getting a OutOfMemory error when logging/etc
+//
+// Not sure yet as to why we need to do this.
+pub const os = if (builtin.os.tag != .emscripten and builtin.os.tag != .wasi) std.os else struct {
+    pub const heap = struct {
+        pub const page_allocator = std.heap.c_allocator;
+    };
+};
+
+pub fn main() !void {
+    var gp = std.heap.GeneralPurposeAllocator(.{
+        .safety = true,
+    }){};
+    defer _ = gp.deinit();
     const screenWidth = 640;
     const screenHeight = 480;
-    const allocator = gpa.allocator();
-    // const gamepad = 0;
+    const allocator = gp.allocator();
 
+    // set current working directory
+    // if (builtin.os.tag == .emscripten or builtin.os.tag == .wasi) {
+    //     const dir = try std.fs.cwd().openDir("/assets", .{});
+    //     if (builtin.os.tag == .emscripten) {
+    //         try dir.setAsCwd();
+    //     } else if (builtin.os.tag == .wasi) {
+    //         @panic("setting the default current working directory in wasi requires overriding defaultWasiCwd()");
+    //     }
+    // } else {
+    //     const dir = try std.fs.cwd().openDir("assets", .{});
+    //     try dir.setAsCwd();
+    // }
     var window = Window.create(screenWidth, screenHeight);
     defer window.destroy();
 
@@ -30,7 +56,7 @@ pub fn main() anyerror!void {
     var lastUpdate: usize = 0;
     // Main game loop
     while (!window.shouldQuit()) { // Detect window close button or ESC key
-        const ticks: usize = sdl.SDL_GetTicks64();
+        const ticks: usize = sdl.SDL_GetTicks();
         // Update
         if (ticks - lastUpdate > 32) {
             lastUpdate = ticks;

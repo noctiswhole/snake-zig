@@ -1,11 +1,35 @@
-const sdl = @import("Window.zig").sdl;
-const gl = @import("gl");
+// const sdl = @import("Window.zig").sdl;
+const sdl = @import("sdl");
+// const gl = @import("gl");
+const gl = @cImport({
+    @cInclude("GLES3/gl31.h");
+});
 const std = @import("std");
 const math = std.math;
 const Vertex = @import("Vertex.zig");
 const zm = @import("zmath");
 const Self = @This();
 const gridSize = @import("Snake.zig").gridSize;
+
+pub const comptime_file_paths = [_][]const u8{
+    "assets/0.bmp",
+    "assets/1.bmp",
+    "assets/2.bmp",
+    "assets/3.bmp",
+    "assets/4.bmp",
+    "assets/5.bmp",
+    "assets/6.bmp",
+    "assets/7.bmp",
+    "assets/8.bmp",
+    "assets/9.bmp",
+};
+
+const EmbeddedFile = struct {
+    path: []const u8,
+    content: []const u8,
+};
+
+pub var embedded_files1 = std.ArrayList(EmbeddedFile).init(std.heap.ArenaAllocator);
 
 const RGB = struct {
     r: f32,
@@ -68,36 +92,36 @@ pub fn getProcAddress(p: ?*anyopaque, proc: [:0]const u8) ?*align(4) const anyop
 extern fn SDL_GL_GetProcAddress(proc: ?[*:0]const u8) ?*align(4) const anyopaque;
 
 fn compileShader(allocator: std.mem.Allocator, vertex_source: [:0]const u8, fragment_source: [:0]const u8) !gl.GLuint {
-    const vertex_shader = try compilerShaderPart(allocator, gl.VERTEX_SHADER, vertex_source);
-    defer gl.deleteShader(vertex_shader);
+    const vertex_shader = try compilerShaderPart(allocator, gl.GL_VERTEX_SHADER, vertex_source);
+    defer gl.glDeleteShader(vertex_shader);
 
-    const fragment_shader = try compilerShaderPart(allocator, gl.FRAGMENT_SHADER, fragment_source);
-    defer gl.deleteShader(fragment_shader);
+    const fragment_shader = try compilerShaderPart(allocator, gl.GL_FRAGMENT_SHADER, fragment_source);
+    defer gl.glDeleteShader(fragment_shader);
 
-    const program = gl.createProgram();
+    const program = gl.glCreateProgram();
     if (program == 0)
         return error.OpenGlFailure;
-    errdefer gl.deleteProgram(program);
+    errdefer gl.glDeleteProgram(program);
 
-    gl.attachShader(program, vertex_shader);
-    defer gl.detachShader(program, vertex_shader);
+    gl.glAttachShader(program, vertex_shader);
+    defer gl.glDetachShader(program, vertex_shader);
 
-    gl.attachShader(program, fragment_shader);
-    defer gl.detachShader(program, fragment_shader);
+    gl.glAttachShader(program, fragment_shader);
+    defer gl.glDetachShader(program, fragment_shader);
 
-    gl.linkProgram(program);
+    gl.glLinkProgram(program);
 
     var link_status: gl.GLint = undefined;
-    gl.getProgramiv(program, gl.LINK_STATUS, &link_status);
+    gl.glGetProgramiv(program, gl.GL_LINK_STATUS, &link_status);
 
-    if (link_status != gl.TRUE) {
+    if (link_status != gl.GL_TRUE) {
         var info_log_length: gl.GLint = undefined;
-        gl.getProgramiv(program, gl.INFO_LOG_LENGTH, &info_log_length);
+        gl.glGetProgramiv(program, gl.GL_INFO_LOG_LENGTH, &info_log_length);
 
         const info_log = try allocator.alloc(u8, @intCast(info_log_length));
         defer allocator.free(info_log);
 
-        gl.getProgramInfoLog(program, @intCast(info_log.len), null, info_log.ptr);
+        gl.glGetProgramInfoLog(program, @intCast(info_log.len), null, info_log.ptr);
 
         std.log.info("failed to compile shader:\n{s}", .{info_log});
 
@@ -108,29 +132,29 @@ fn compileShader(allocator: std.mem.Allocator, vertex_source: [:0]const u8, frag
 }
 
 fn compilerShaderPart(allocator: std.mem.Allocator, shader_type: gl.GLenum, source: [:0]const u8) !gl.GLuint {
-    const shader = gl.createShader(shader_type);
+    const shader = gl.glCreateShader(shader_type);
     if (shader == 0)
         return error.OpenGlFailure;
-    errdefer gl.deleteShader(shader);
+    errdefer gl.glDeleteShader(shader);
 
     var sources = [_][*c]const u8{source.ptr};
     var lengths = [_]gl.GLint{@intCast(source.len)};
 
-    gl.shaderSource(shader, 1, &sources, &lengths);
+    gl.glShaderSource(shader, 1, &sources, &lengths);
 
-    gl.compileShader(shader);
+    gl.glCompileShader(shader);
 
     var compile_status: gl.GLint = undefined;
-    gl.getShaderiv(shader, gl.COMPILE_STATUS, &compile_status);
+    gl.glGetShaderiv(shader, gl.GL_COMPILE_STATUS, &compile_status);
 
-    if (compile_status != gl.TRUE) {
+    if (compile_status != gl.GL_TRUE) {
         var info_log_length: gl.GLint = undefined;
-        gl.getShaderiv(shader, gl.INFO_LOG_LENGTH, &info_log_length);
+        gl.glGetShaderiv(shader, gl.GL_INFO_LOG_LENGTH, &info_log_length);
 
         const info_log = try allocator.alloc(u8, @intCast(info_log_length));
         defer allocator.free(info_log);
 
-        gl.getShaderInfoLog(shader, @intCast(info_log.len), null, info_log.ptr);
+        gl.glGetShaderInfoLog(shader, @intCast(info_log.len), null, info_log.ptr);
 
         std.log.info("failed to compile shader:\n{s}", .{info_log});
 
@@ -141,10 +165,11 @@ fn compilerShaderPart(allocator: std.mem.Allocator, shader_type: gl.GLenum, sour
 }
 
 pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWidth: u32, screenHeight: u32) Self {
-
-    gl.load(context, getProcAddress) catch {
-        @panic("Could not load GL context");
-    };
+    _ = sdl.IMG_Init(sdl.IMG_INIT_PNG);
+        _ = context;
+    // gl.glLoad(context, getProcAddress) catch {
+    //     @panic("Could not load GL context");
+    // };
     const program = compileShader(allocator, @embedFile("rectangle.vert"), @embedFile("rectangle.frag")) catch {
         @panic("Could not compile shaders");
     };
@@ -158,69 +183,66 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWi
     var vbo: gl.GLuint = undefined;
     var ebo: gl.GLuint = undefined;
 
-    gl.genVertexArrays(1, &vao);
+    gl.glGenVertexArrays(1, &vao);
     if (vao == 0) {
         @panic("Could not generate vertex array");
     }
 
-    gl.genBuffers(1, &vbo);
+    gl.glGenBuffers(1, &vbo);
     if (vbo == 0) {
         @panic("Could not generate vertex buffer");
     }
 
-    gl.genBuffers(1, &ebo);
+    gl.glGenBuffers(1, &ebo);
     if (ebo == 0) {
         @panic("Could not generate ebo buffer");
     }
 
     // Bind buffers
-    gl.bindVertexArray(vao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-    gl.bufferData(gl.ARRAY_BUFFER, @sizeOf(@TypeOf(vertices)), &vertices, gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, 6 * @sizeOf(c_uint), &indices, gl.STATIC_DRAW);
+    gl.glBindVertexArray(vao);
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo);
+    gl.glBufferData(gl.GL_ARRAY_BUFFER, @sizeOf(@TypeOf(vertices)), &vertices, gl.GL_STATIC_DRAW);
+    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, ebo);
+    gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER, 6 * @sizeOf(c_uint), &indices, gl.GL_STATIC_DRAW);
 
     // bind data
     // position
-    gl.enableVertexAttribArray(0); 
-    gl.vertexAttribPointer(0, 2, gl.FLOAT, gl.FALSE, @sizeOf(Vertex), @ptrFromInt(@offsetOf(Vertex, "x")));
+    gl.glEnableVertexAttribArray(0); 
+    gl.glVertexAttribPointer(0, 2, gl.GL_FLOAT, gl.GL_FALSE, @sizeOf(Vertex), @ptrFromInt(@offsetOf(Vertex, "x")));
 
     // uv
-    gl.enableVertexAttribArray(1);
-    gl.vertexAttribPointer(1, 2, gl.FLOAT, gl.FALSE, @sizeOf(Vertex), @ptrFromInt(@offsetOf(Vertex, "u")));
+    gl.glEnableVertexAttribArray(1);
+    gl.glVertexAttribPointer(1, 2, gl.GL_FLOAT, gl.GL_FALSE, @sizeOf(Vertex), @ptrFromInt(@offsetOf(Vertex, "u")));
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, 0);
-    gl.bindVertexArray(0);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0);
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0);
+    gl.glBindVertexArray(0);
+    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, 0);
 
     // gl.enable(gl.CULL_FACE);
-    gl.enable(gl.BLEND);
+    gl.glEnable(gl.GL_BLEND);
 
     var texture: gl.GLuint = undefined;
-    gl.genTextures(1, &texture);
+    gl.glGenTextures(1, &texture);
 
-    // gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
-    gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
+    gl.glBindTexture(gl.GL_TEXTURE_2D_ARRAY, texture);
+    gl.glBindTexture(gl.GL_TEXTURE_2D_ARRAY, texture);
     // gl.texImage3D(gl.TEXTURE_2D_ARRAY, 0, gl.RGBA, fontSurface.*.w, fontSurface.*.h, 16, 0, mode, gl.UNSIGNED_BYTE, fontSurface.*.pixels);
-    gl.texImage3D(gl.TEXTURE_2D_ARRAY, 0, gl.RGBA, 16, 32, 10, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    // gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.UNSIGNED_BYTE, 16, 32, 1);
+    gl.glTexImage3D(gl.GL_TEXTURE_2D_ARRAY, 0, gl.GL_RGBA, 16, 32, 10, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, null);
 
-    var buf: [6]u8 = undefined;
-    for (0..10) |i| {
-        const numAsString = std.fmt.bufPrint(&buf, "{d}.png\x00", .{i}) catch {
-            @panic("Failed to format string.");
+    inline for (0..comptime_file_paths.len) |i| {
+        const tex = @embedFile(comptime_file_paths[i]);
+        const rw = sdl.SDL_RWFromConstMem(tex, tex.len) orelse {
+            @panic("lol");
         };
-        const fontSurface = sdl.IMG_Load(numAsString.ptr) orelse {
-            @panic("Missing texture");
+        const fontSurface = sdl.SDL_LoadBMP_RW(rw, 0) orelse {
+            @panic("also lol");
         };
         defer sdl.SDL_FreeSurface(fontSurface);
-        gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, @intCast(i), 16, 32, 1, gl.RGBA, gl.UNSIGNED_BYTE, fontSurface.*.pixels);
+        gl.glTexSubImage3D(gl.GL_TEXTURE_2D_ARRAY, 0, 0, 0, @intCast(i), 16, 32, 1, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, fontSurface.*.pixels);
     }
-    // gl.texImage2D(gl.TEXTURE_2D, 0, @intCast(mode), fontSurface.*.w, fontSurface.*.h, 0, mode, gl.UNSIGNED_BYTE, fontSurface.*.pixels);
-    gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
 
-    gl.bindTexture(gl.TEXTURE_2D_ARRAY, 0);
-
+    gl.glGenerateMipmap(gl.GL_TEXTURE_2D_ARRAY);
+    gl.glBindTexture(gl.GL_TEXTURE_2D_ARRAY, 0);
 
     return .{
         .program = program,
@@ -236,71 +258,71 @@ pub fn create(context: sdl.SDL_GLContext, allocator: std.mem.Allocator, screenWi
 
 pub fn destroy(self: *Self) void {
     sdl.TTF_Quit();
-    gl.deleteProgram(self.program);
-    gl.deleteProgram(self.texProgram);
-    gl.deleteVertexArrays(1, &self.vao);
-    gl.deleteBuffers(1, &self.vbo);
-    gl.deleteBuffers(1, &self.ebo);
-    gl.deleteTextures(1, &self.scoreTexture);
+    gl.glDeleteProgram(self.program);
+    gl.glDeleteProgram(self.texProgram);
+    gl.glDeleteVertexArrays(1, &self.vao);
+    gl.glDeleteBuffers(1, &self.vbo);
+    gl.glDeleteBuffers(1, &self.ebo);
+    gl.glDeleteTextures(1, &self.scoreTexture);
 }
 
 pub fn beginDraw(_: *Self) void {
 }
 
 pub fn clear(_: *Self) void {
-    gl.clearColor(0.6, 0.72, 0.06, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.glClearColor(0.6, 0.72, 0.06, 1);
+    gl.glClear(gl.GL_COLOR_BUFFER_BIT);
 }
 
 pub fn drawScore(self: *Self, score: usize) void {
-    gl.useProgram(self.texProgram);
-    gl.bindTexture(gl.TEXTURE_2D_ARRAY, self.scoreTexture);
+    gl.glUseProgram(self.texProgram);
+    gl.glBindTexture(gl.GL_TEXTURE_2D_ARRAY, self.scoreTexture);
 
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.glTexParameteri(gl.GL_TEXTURE_2D_ARRAY, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
+    gl.glTexParameteri(gl.GL_TEXTURE_2D_ARRAY, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
+    gl.glTexParameteri(gl.GL_TEXTURE_2D_ARRAY, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR);
+    gl.glTexParameteri(gl.GL_TEXTURE_2D_ARRAY, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR);
 
     const projection = zm.orthographicRhGl(@floatFromInt(640), @floatFromInt(480), -1, 1);
-    const uniformProjection = gl.getUniformLocation(self.texProgram, "projection");
-    gl.uniformMatrix4fv(uniformProjection, 1, gl.TRUE, zm.arrNPtr(&projection));
+    const uniformProjection = gl.glGetUniformLocation(self.texProgram, "projection");
+    gl.glUniformMatrix4fv(uniformProjection, 1, gl.GL_TRUE, zm.arrNPtr(&projection));
 
-    const uniformIndex = gl.getUniformLocation(self.texProgram, "index");
+    const uniformIndex = gl.glGetUniformLocation(self.texProgram, "index");
 
     var tempscore = score;
     var offset: i64 = 0;
 
     while (tempscore > 0 or offset == 0) {
         const digit = tempscore % 10;
-        gl.uniform1ui(uniformIndex, @intCast(digit));
+        gl.glUniform1ui(uniformIndex, @intCast(digit));
         self.drawRectangle(self.texProgram, 624 - 16 * offset, 448, 16, 32);
         tempscore = tempscore / 10;
         offset = offset + 1;
     }
 
-    gl.bindTexture(gl.TEXTURE_2D_ARRAY, 0);
-    gl.useProgram(0);
+    gl.glBindTexture(gl.GL_TEXTURE_2D_ARRAY, 0);
+    gl.glUseProgram(0);
 }
 
 pub fn drawRectangle(self: *Self, program: gl.GLuint, x: i64, y: i64, w: i64, h: i64) void {
     const transform = zm.mul(zm.scaling(@floatFromInt(w), @floatFromInt(h), 0), zm.translation(@floatFromInt(x - @divFloor(self.screenWidth, 2)), @floatFromInt(y - @divFloor(self.screenHeight, 2)), 0));
 
-    gl.bindVertexArray(self.vao);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.ebo);
-    const uniformTransform = gl.getUniformLocation(program, "transform");
-    gl.uniformMatrix4fv(uniformTransform, 1, gl.FALSE, zm.arrNPtr(&transform));
+    gl.glBindVertexArray(self.vao);
+    gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, self.ebo);
+    const uniformTransform = gl.glGetUniformLocation(program, "transform");
+    gl.glUniformMatrix4fv(uniformTransform, 1, gl.GL_FALSE, zm.arrNPtr(&transform));
 
-    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, null);
-    gl.bindVertexArray(0);
+    gl.glDrawElements(gl.GL_TRIANGLES, 6, gl.GL_UNSIGNED_INT, null);
+    gl.glBindVertexArray(0);
 }
 
 pub fn drawSquare(self: *Self, x: i64, y: i64) void {
-    gl.useProgram(self.program);
+    gl.glUseProgram(self.program);
     const projection = zm.orthographicRhGl(@floatFromInt(640), @floatFromInt(480), -1, 1);
-    const uniformProjection = gl.getUniformLocation(self.program, "projection");
+    const uniformProjection = gl.glGetUniformLocation(self.program, "projection");
     // Transposition is needed because GLSL uses column-major matrices by default
-    gl.uniformMatrix4fv(uniformProjection, 1, gl.TRUE, zm.arrNPtr(&projection));
-    const uniformRGB = gl.getUniformLocation(self.program, "drawColor");
-    gl.uniform3f(uniformRGB, 0.06, 0.2, 0.06);
+    gl.glUniformMatrix4fv(uniformProjection, 1, gl.GL_TRUE, zm.arrNPtr(&projection));
+    const uniformRGB = gl.glGetUniformLocation(self.program, "drawColor");
+    gl.glUniform3f(uniformRGB, 0.06, 0.2, 0.06);
     self.drawRectangle(self.program, x, y, 15, 15);
 }
